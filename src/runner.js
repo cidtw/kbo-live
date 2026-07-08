@@ -3,7 +3,7 @@
 const readline = require('readline');
 const config = require('./config');
 const { C, fg256, TEAM } = require('./ansi');
-const { sleep, sleepOrInterrupt, kstDateStr } = require('./util');
+const { sleep, sleepOrInterrupt, kstDateStr, REVERSE_TEAM_MAP } = require('./util');
 const { fetchGamesByDate, fetchGame, fetchRelay, fetchWeather } = require('./api');
 const { Broadcast } = require('./broadcast');
 const { render } = require('./render');
@@ -32,8 +32,13 @@ function gameMeta(g) {
 
 function matchTeam(g, q) {
   const s = String(q).toLowerCase();
+  const mapped = REVERSE_TEAM_MAP[s.toUpperCase()];
+  const searchTerms = [s];
+  if (mapped) {
+    searchTerms.push(mapped.toLowerCase());
+  }
   return [g.homeTeamCode, g.homeTeamName, g.awayTeamCode, g.awayTeamName]
-    .some((v) => v && String(v).toLowerCase().includes(s));
+    .some((v) => v && searchTerms.some((term) => String(v).toLowerCase().includes(term)));
 }
 
 // 중계 대상 경기 결정 → { game, replay, menu, games }

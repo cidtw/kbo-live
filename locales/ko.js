@@ -92,7 +92,7 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   seasonAvg: (v) => `시즌 ${v}`,
   seasonEra: (v) => `평자 ${v}`,
   baseEmpty: '주자 없음',
-  footer: ({ theme, W, rows }) => ` kbo-live · 테마 ${theme} · ${W}×${rows} · 비공식 팬 프로젝트 (데이터: 네이버 스포츠)`,
+  footer: ({ theme, W, rows }) => ` kbo-live · 테마 ${theme} · ${W}×${rows} · Source: 네이버 스포츠 / Original : Lucas (@Lucas20000903)`,
   endBanner: '— 중계 종료 —',
   errorLabel: '오류',
   menuTitle: 'KBO 리그 경기 선택 (메인 메뉴)',

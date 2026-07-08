@@ -1,7 +1,7 @@
 'use strict';
 
 const config = require('./config');
-const { padEndW, truncW } = require('./util');
+const { padEndW, truncW, mapTeamCode } = require('./util');
 const {
   useColor, C, bg, fg256, TEAM, CNT,
   visLen, padEndWColor, truncColor, center,
@@ -85,7 +85,7 @@ function lineScore(bc, W) {
     + ' ' + ['R', 'H', 'E', 'B'].map((h) => center(`${C.gray}${C.bold}${h}${C.reset}`, CW)).join('');
   const row = (side) => {
     const col = TEAM[side];
-    const name = bc.meta[side]?.code || bc.meta[side]?.name || side;
+    const name = mapTeamCode(bc.meta[side]?.code || bc.meta[side]?.name || side);
     const sc = isc[side] || {};
     const cur = (i) => bc.inn === i && !bc.ended && ((side === 'away') === (bc.half === 'T'));
     let s = `${fg256(col)}${C.bold}${padEndW(truncW(name, LBL - 1), LBL)}${C.reset}`;
@@ -230,8 +230,8 @@ function gamesBar(bc, W) {
       }
     }
 
-    const awayCode = g.awayTeamCode || g.awayTeamName || '?';
-    const homeCode = g.homeTeamCode || g.homeTeamName || '?';
+    const awayCode = mapTeamCode(g.awayTeamCode) || g.awayTeamName || '?';
+    const homeCode = mapTeamCode(g.homeTeamCode) || g.homeTeamName || '?';
     const matchStr = `${awayCode}-${homeCode}`;
 
     if (isActive) {

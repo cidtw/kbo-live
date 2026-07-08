@@ -45,3 +45,26 @@ test('fetchWeather: returns null for invalid stadium', async () => {
   const res = await fetchWeather('nonsense_stadium');
   assert.strictEqual(res, null);
 });
+
+const { mapTeamCode } = require('../src/util');
+
+test('mapTeamCode: correctly translates 2-digit team codes to custom codes', () => {
+  assert.strictEqual(mapTeamCode('LT'), 'LOT');
+  assert.strictEqual(mapTeamCode('SK'), 'SSG');
+  assert.strictEqual(mapTeamCode('HT'), 'KIA');
+  assert.strictEqual(mapTeamCode('OB'), 'DB');
+  assert.strictEqual(mapTeamCode('WO'), 'KH');
+  assert.strictEqual(mapTeamCode('SS'), 'SL');
+  assert.strictEqual(mapTeamCode('HH'), 'HE');
+  assert.strictEqual(mapTeamCode('LG'), 'LG');
+  assert.strictEqual(mapTeamCode('NC'), 'NCD');
+  assert.strictEqual(mapTeamCode('KT'), 'KT');
+  assert.strictEqual(mapTeamCode('UNKNOWN'), 'UNKNOWN');
+});
+
+test('resolveTarget: matches game by custom team code (e.g. KIA)', async () => {
+  const opts = { date: '2026-07-07', team: 'KIA', replay: true };
+  const res = await resolveTarget(opts);
+  assert.ok(res.game);
+  assert.strictEqual(res.game.awayTeamCode, 'HT');
+});

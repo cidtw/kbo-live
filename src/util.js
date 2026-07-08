@@ -82,6 +82,39 @@ async function sleepOrInterrupt(ms, bc) {
   return bc && (!!bc.switchRequested || !!bc.menuRequested);
 }
 
+const TEAM_MAP = {
+  'LT': 'LOT',
+  'NC': 'NCD',
+  'HH': 'HE',
+  'HT': 'KIA',
+  'LG': 'LG',
+  'SS': 'SL',
+  'SK': 'SSG',
+  'OB': 'DB',
+  'WO': 'KH',
+  'KT': 'KT'
+};
+
+const REVERSE_TEAM_MAP = {
+  'LOT': 'LT',
+  'NCD': 'NC',
+  'HE': 'HH',
+  'KIA': 'HT',
+  'LG': 'LG',
+  'SL': 'SS',
+  'SSG': 'SK',
+  'DB': 'OB',
+  'KH': 'WO',
+  'KT': 'KT'
+};
+
+function mapTeamCode(code) {
+  if (!code) return '';
+  const upper = String(code).toUpperCase();
+  return TEAM_MAP[upper] || upper;
+}
+
 module.exports = {
   clampNum, kstDateStr, parseDateArg, isWide, dw, padEndW, padStartW, truncW, sleep, sleepOrInterrupt,
+  TEAM_MAP, REVERSE_TEAM_MAP, mapTeamCode
 };
