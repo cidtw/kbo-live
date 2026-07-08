@@ -79,7 +79,7 @@ Note: relay text is Korean only (source: Naver Sports).
   connectStart: ({ away, home }) => `${away} vs ${home} — waiting for first pitch`,
 
   commentaryTitle: 'COMMENTARY',
-  scrollHint: 'arrows scroll · [1-9]/←→ switch · p preview · r record · m menu · q quit',
+  scrollHint: 'arrows scroll · [1-9]/←→ switch · p preview · o record · m menu · q quit',
   endHint: 'G latest',
   scrollPast: ({ end, total }) => `viewing past ${end}/${total}`,
   moreAbove: (n) => ` ↑ ${n} more `,

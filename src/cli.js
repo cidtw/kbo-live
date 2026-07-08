@@ -198,8 +198,8 @@ async function main() {
         return;
       }
 
-      // Toggle record panel key: 'r'
-      if (s === 'r' || key.name === 'r') {
+      // Toggle record panel key: 'o'
+      if (s === 'o' || key.name === 'o') {
         if (!bc.recordMode) bc.recordMode = 'summary';
         else if (bc.recordMode === 'summary') bc.recordMode = 'batters';
         else if (bc.recordMode === 'batters') bc.recordMode = 'pitchers';
