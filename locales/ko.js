@@ -81,7 +81,7 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
 
   // 스코어보드
   commentaryTitle: '문자중계',
-  scrollHint: '↑↓ 스크롤 · [1-9]/←→ 전환 · p 전력분석 · m 메뉴 · q 종료',
+  scrollHint: '↑↓ 스크롤 · [1-9]/←→ 전환 · p 전력분석 · r 경기기록 · m 메뉴 · q 종료',
   endHint: 'G 최신',
   scrollPast: ({ end, total }) => `과거 보기 ${end}/${total}`,
   moreAbove: (n) => ` ↑ 이전 ${n}줄 `,

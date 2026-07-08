@@ -110,4 +110,13 @@ async function fetchPreview(gameId) {
   return null;
 }
 
-module.exports = { GW, get, getJSON, fetchGamesByDate, fetchGame, fetchRelay, fetchWeather, fetchPreview };
+async function fetchRecord(gameId) {
+  const url = `${GW}/schedule/games/${encodeURIComponent(gameId)}/record`;
+  try {
+    const { data } = await getJSON(url);
+    return data?.result?.recordData || null;
+  } catch (_) {}
+  return null;
+}
+
+module.exports = { GW, get, getJSON, fetchGamesByDate, fetchGame, fetchRelay, fetchWeather, fetchPreview, fetchRecord };

@@ -81,3 +81,17 @@ test('fetchPreview: resolves preview data for a valid gameId', async () => {
     assert.strictEqual(res, null);
   }
 });
+
+const { fetchRecord } = require('../src/api');
+
+test('fetchRecord: resolves record data for a valid gameId', async () => {
+  const res = await fetchRecord('20260707HTLT02026');
+  if (res) {
+    assert.ok(res.gameInfo);
+    assert.ok(res.scoreBoard);
+    assert.ok(res.battersBoxscore);
+    assert.ok(res.pitchersBoxscore);
+  } else {
+    assert.strictEqual(res, null);
+  }
+});

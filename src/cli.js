@@ -193,6 +193,19 @@ async function main() {
       // Toggle preview panel key: 'p'
       if (s === 'p' || key.name === 'p') {
         bc.showPreview = !bc.showPreview;
+        if (bc.showPreview) bc.recordMode = null;
+        render(bc);
+        return;
+      }
+
+      // Toggle record panel key: 'r'
+      if (s === 'r' || key.name === 'r') {
+        if (!bc.recordMode) bc.recordMode = 'summary';
+        else if (bc.recordMode === 'summary') bc.recordMode = 'batters';
+        else if (bc.recordMode === 'batters') bc.recordMode = 'pitchers';
+        else bc.recordMode = null;
+
+        if (bc.recordMode) bc.showPreview = false;
         render(bc);
         return;
       }

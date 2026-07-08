@@ -355,6 +355,168 @@ function previewBlock(bc, W) {
   return out;
 }
 
+function recordSummaryBlock(bc, rd, W) {
+  const out = [];
+  const hName = bc.meta.home?.name || 'HOME';
+  const aName = bc.meta.away?.name || 'AWAY';
+  const hCode = mapTeamCode(bc.meta.home?.code || '');
+  const aCode = mapTeamCode(bc.meta.away?.code || '');
+
+  out.push(center(`${C.bold}${C.byellow}RECORD - SUMMARY${C.reset}`, W));
+  out.push('');
+
+  // 1. RHEB scoreboard comparison
+  const rheb = rd.scoreBoard?.rheb || {};
+  const awayR = rheb.away || { r: 0, h: 0, e: 0, b: 0 };
+  const homeR = rheb.home || { r: 0, h: 0, e: 0, b: 0 };
+
+  const rHead = ' '.repeat(16) + '  R   H   E   B';
+  const rAway = `${C.bold}${fg256(TEAM.away)}${padEndW(aCode + ' ' + aName, 14)}${C.reset}  ${center(awayR.r, 3)} ${center(awayR.h, 3)} ${center(awayR.e, 3)} ${center(awayR.b, 3)}`;
+  const rHome = `${C.bold}${fg256(TEAM.home)}${padEndW(hCode + ' ' + hName, 14)}${C.reset}  ${center(homeR.r, 3)} ${center(homeR.h, 3)} ${center(homeR.e, 3)} ${center(homeR.b, 3)}`;
+
+  out.push(center(rHead, W), center(rAway, W), center(rHome, W));
+
+  // 2. Pitching results (승/패/세/홀)
+  const pitchingRes = (rd.pitchingResult || []).map(p => {
+    let role = p.wls === 'W' ? '승리투수' : p.wls === 'L' ? '패전투수' : p.wls === 'S' ? '세이브' : p.wls === 'H' ? '홀드' : '';
+    if (!role) return '';
+    return `[${role}] ${p.name} (${p.w}승 ${p.l}패${p.s ? ` ${p.s}세` : ''})`;
+  }).filter(Boolean).join('   ');
+  
+  if (pitchingRes) {
+    out.push('', center(`${C.white}${pitchingRes}${C.reset}`, W));
+  }
+
+  out.push(center(`${C.gray}──────────────────────────────────────────────────────────${C.reset}`, W));
+
+  // 3. etcRecords
+  const etc = rd.etcRecords || [];
+  if (etc.length > 0) {
+    const colW = Math.floor((W - 8) / 2);
+    // Draw in two columns
+    const half = Math.ceil(etc.length / 2);
+    for (let i = 0; i < half; i++) {
+      const e1 = etc[i];
+      const e2 = etc[i + half];
+
+      const c1 = e1 ? `${C.gray}[${e1.how}]${C.reset} ${e1.result}` : '';
+      const c2 = e2 ? `${C.gray}[${e2.how}]${C.reset} ${e2.result}` : '';
+
+      const row = c1 + ' '.repeat(Math.max(2, colW - visLen(c1))) + c2;
+      out.push('  ' + row);
+    }
+  }
+
+  return out;
+}
+
+function recordBattersBlock(bc, rd, W) {
+  const out = [];
+  const hName = bc.meta.home?.name || 'HOME';
+  const aName = bc.meta.away?.name || 'AWAY';
+
+  out.push(center(`${C.bold}${C.byellow}RECORD - BATTERS BOXSCORE${C.reset}`, W));
+  out.push('');
+
+  const headers = `이름     포  타  안  점  볼  삼  타율`;
+  const colW = Math.floor((W - 8) / 2);
+  
+  // Title row
+  const titleRow = `${C.bold}${fg256(TEAM.away)}${padEndW(aName + ' 타자', colW)}${C.reset}  ${C.bold}${fg256(TEAM.home)}${hName} 타자${C.reset}`;
+  const headerRow = `${C.gray}${padEndW(headers, colW)}${C.reset}  ${C.gray}${headers}${C.reset}`;
+  out.push('  ' + titleRow, '  ' + headerRow);
+
+  const awayList = rd.battersBoxscore?.away || [];
+  const homeList = rd.battersBoxscore?.home || [];
+  const N = Math.max(awayList.length, homeList.length);
+
+  const formatBatter = (b) => {
+    if (!b) return '';
+    const name = padEndW(truncW(b.name, 4), 4);
+    const pos = padEndW(truncW(b.pos || '-', 2), 2);
+    const ab = String(b.ab ?? 0).padStart(2);
+    const hit = String(b.hit ?? 0).padStart(2);
+    const rbi = String(b.rbi ?? 0).padStart(2);
+    const bb = String(b.bb ?? 0).padStart(2);
+    const kk = String(b.kk ?? 0).padStart(2);
+    const avg = b.hra || '.000';
+    return `${name} ${pos} ${ab} ${hit} ${rbi} ${bb} ${kk} ${avg}`;
+  };
+
+  for (let i = 0; i < N; i++) {
+    const ab = formatBatter(awayList[i]);
+    const hb = formatBatter(homeList[i]);
+    const row = ab + ' '.repeat(Math.max(2, colW - visLen(ab))) + hb;
+    out.push('  ' + row);
+  }
+
+  return out;
+}
+
+function recordPitchersBlock(bc, rd, W) {
+  const out = [];
+  const hName = bc.meta.home?.name || 'HOME';
+  const aName = bc.meta.away?.name || 'AWAY';
+
+  out.push(center(`${C.bold}${C.byellow}RECORD - PITCHERS BOXSCORE${C.reset}`, W));
+  out.push('');
+
+  const headers = `이름     이닝  타  안  홈  볼  삼  실  자  방어율`;
+  const colW = Math.floor((W - 8) / 2);
+
+  const titleRow = `${C.bold}${fg256(TEAM.away)}${padEndW(aName + ' 투수', colW)}${C.reset}  ${C.bold}${fg256(TEAM.home)}${hName} 투수${C.reset}`;
+  const headerRow = `${C.gray}${padEndW(headers, colW)}${C.reset}  ${C.gray}${headers}${C.reset}`;
+  out.push('  ' + titleRow, '  ' + headerRow);
+
+  const awayList = rd.pitchersBoxscore?.away || [];
+  const homeList = rd.pitchersBoxscore?.home || [];
+  const N = Math.max(awayList.length, homeList.length);
+
+  const formatPitcher = (p) => {
+    if (!p) return '';
+    const name = padEndW(truncW(p.name, 4), 4);
+    const inn = padEndW(truncW(p.inn || '-', 4), 4);
+    const bf = String(p.pa ?? p.bf ?? 0).padStart(2);
+    const hit = String(p.hit ?? 0).padStart(2);
+    const hr = String(p.hr ?? 0).padStart(2);
+    const bb = String(p.bb ?? 0).padStart(2);
+    const kk = String(p.kk ?? 0).padStart(2);
+    const r = String(p.r ?? 0).padStart(2);
+    const er = String(p.er ?? 0).padStart(2);
+    const era = p.era || '0.00';
+    return `${name} ${inn} ${bf} ${hit} ${hr} ${bb} ${kk} ${r} ${er} ${era}`;
+  };
+
+  for (let i = 0; i < N; i++) {
+    const ap = formatPitcher(awayList[i]);
+    const hp = formatPitcher(homeList[i]);
+    const row = ap + ' '.repeat(Math.max(2, colW - visLen(ap))) + hp;
+    out.push('  ' + row);
+  }
+
+  return out;
+}
+
+function recordBlock(bc, W) {
+  const rd = bc.record;
+  if (!rd) {
+    return [
+      '',
+      center(`${C.dim}Loading record data...${C.reset}`, W),
+      ''
+    ];
+  }
+
+  if (bc.recordMode === 'summary') {
+    return recordSummaryBlock(bc, rd, W);
+  } else if (bc.recordMode === 'batters') {
+    return recordBattersBlock(bc, rd, W);
+  } else if (bc.recordMode === 'pitchers') {
+    return recordPitchersBlock(bc, rd, W);
+  }
+  return [];
+}
+
 function render(bc) {
   if (!config.gui) return;
   const W = termW();
@@ -365,7 +527,15 @@ function render(bc) {
   const bar = gamesBar(bc, W);
   if (bar) out.push(bar);
 
-  if (bc.showPreview) {
+  if (bc.recordMode) {
+    if (showBoard) {
+      if (roomy) out.push('');
+      out.push(...recordBlock(bc, W));
+      if (roomy) out.push('');
+    } else {
+      out.push(center(`${C.dim}Record (Low height screen)${C.reset}`, W));
+    }
+  } else if (bc.showPreview) {
     if (showBoard) {
       if (roomy) out.push('');
       out.push(...previewBlock(bc, W));
