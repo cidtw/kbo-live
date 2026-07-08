@@ -4,7 +4,7 @@ const readline = require('readline');
 const config = require('./config');
 const { C, fg256, TEAM } = require('./ansi');
 const { sleep, sleepOrInterrupt, kstDateStr, REVERSE_TEAM_MAP } = require('./util');
-const { fetchGamesByDate, fetchGame, fetchRelay, fetchWeather } = require('./api');
+const { fetchGamesByDate, fetchGame, fetchRelay, fetchWeather, fetchPreview } = require('./api');
 const { Broadcast } = require('./broadcast');
 const { render } = require('./render');
 const { i18n } = require('./i18n');
@@ -159,6 +159,15 @@ async function runLive(bc, game, opts) {
     }).catch(() => {});
   }
 
+  if (game.gameId) {
+    fetchPreview(game.gameId).then(p => {
+      if (p) {
+        bc.preview = p;
+        render(bc);
+      }
+    }).catch(() => {});
+  }
+
   const started = await waitForStart(bc, game, opts);
   if (!started || bc.switchRequested || bc.menuRequested) return;
 
@@ -249,6 +258,15 @@ async function runReplay(bc, game, opts) {
     fetchWeather(game.stadium).then(w => {
       if (w) {
         bc.weather = w;
+        render(bc);
+      }
+    }).catch(() => {});
+  }
+
+  if (game.gameId) {
+    fetchPreview(game.gameId).then(p => {
+      if (p) {
+        bc.preview = p;
         render(bc);
       }
     }).catch(() => {});

@@ -190,6 +190,13 @@ async function main() {
         }
       }
 
+      // Toggle preview panel key: 'p'
+      if (s === 'p' || key.name === 'p') {
+        bc.showPreview = !bc.showPreview;
+        render(bc);
+        return;
+      }
+
       // Back to menu keys: 'm', 'escape', 'backspace'
       if (s === 'm' || key.name === 'm' || key.name === 'escape' || key.name === 'backspace') {
         bc.menuRequested = true;

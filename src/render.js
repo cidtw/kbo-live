@@ -245,6 +245,116 @@ function gamesBar(bc, W) {
   return center(truncColor(joined, W), W);
 }
 
+function previewBlock(bc, W) {
+  const pd = bc.preview;
+  if (!pd) {
+    return [
+      '',
+      center(`${C.dim}Loading preview data...${C.reset}`, W),
+      ''
+    ];
+  }
+
+  const out = [];
+
+  const hName = pd.gameInfo?.hName || bc.meta.home?.name || 'HOME';
+  const aName = pd.gameInfo?.aName || bc.meta.away?.name || 'AWAY';
+  const hCode = mapTeamCode(pd.gameInfo?.hCode || bc.meta.home?.code || '');
+  const aCode = mapTeamCode(pd.gameInfo?.aCode || bc.meta.away?.code || '');
+
+  // 1. Teams & Standings
+  const aStd = pd.awayStandings || {};
+  const hStd = pd.homeStandings || {};
+  const aRankText = aStd.rank ? `${aStd.rank}위 (${aStd.w}승 ${aStd.l}패 ${aStd.d}무)` : '';
+  const hRankText = hStd.rank ? `${hStd.rank}위 (${hStd.w}승 ${hStd.l}패 ${hStd.d}무)` : '';
+  
+  const leftInfo = `${C.bold}${fg256(TEAM.away)}${aCode} ${aName}${C.reset} [${aRankText}]`;
+  const rightInfo = `${C.bold}${fg256(TEAM.home)}${hCode} ${hName}${C.reset} [${hRankText}]`;
+  out.push(center(`${leftInfo}  ${C.dim}vs${C.reset}  ${rightInfo}`, W));
+
+  // 2. Season Team Stats (ERA / HRA)
+  const aTeamStats = `ERA ${aStd.era || '-'}  타율 ${aStd.hra || '-'}`;
+  const hTeamStats = `ERA ${hStd.era || '-'}  타율 ${hStd.hra || '-'}`;
+  out.push(center(`${C.dim}${aTeamStats}${C.reset}  ${C.gray}│${C.reset}  ${C.dim}${hTeamStats}${C.reset}`, W));
+
+  // 3. Head-to-Head & TV Channel
+  const vs = pd.seasonVsResult || {};
+  const vsText = vs.aw != null ? `${aName} ${vs.aw}승 ${vs.ad}무 ${vs.hw}승 ${hName}` : '';
+  const channelText = bc.meta.broadChannel ? `방송: ${bc.meta.broadChannel}` : '';
+  const vsRow = [vsText, channelText].filter(Boolean).join(`  ${C.gray}·${C.reset}  `);
+  if (vsRow) {
+    out.push(center(`${C.byellow}${vsRow}${C.reset}`, W));
+  }
+  
+  out.push(center(`${C.gray}──────────────────────────────────────────────────────────${C.reset}`, W));
+
+  // 4. Starting Pitchers
+  const aStart = pd.awayStarter || {};
+  const hStart = pd.homeStarter || {};
+  const aStarterName = aStart.playerInfo?.name || '-';
+  const hStarterName = hStart.playerInfo?.name || '-';
+  
+  const aStarterStats = aStart.currentSeasonStats || {};
+  const hStarterStats = hStart.currentSeasonStats || {};
+  
+  const aStarterWLE = aStarterStats.w != null ? `${aStarterStats.w}승 ${aStarterStats.l}패  ERA ${aStarterStats.era}` : '';
+  const hStarterWLE = hStarterStats.w != null ? `${hStarterStats.w}승 ${hStarterStats.l}패  ERA ${hStarterStats.era}` : '';
+
+  // Pitch types
+  const formatPits = (pits) => {
+    if (!pits || !pits.length) return '';
+    return pits.slice(0, 2).map(p => `${p.type}(${Math.round(p.pit_rt)}%)`).join(' ');
+  };
+  const aPits = formatPits(aStart.currentPitKindStats);
+  const hPits = formatPits(hStart.currentPitKindStats);
+
+  // VS Opponent stats
+  const formatVsOpp = (opp) => {
+    if (!opp || !opp.gameCount || opp.gameCount === '0') return '상대전적 없음';
+    return `대 ${opp.era} ERA (${opp.gameCount}경)`;
+  };
+  const aVsOpp = formatVsOpp(aStart.currentSeasonStatsOnOpponents);
+  const hVsOpp = formatVsOpp(hStart.currentSeasonStatsOnOpponents);
+
+  // Pitcher formatting: two columns
+  const colW = Math.floor((W - 8) / 2);
+  
+  const pCol1 = `선발: ${C.bold}${aStarterName}${C.reset} (${aStarterWLE})`;
+  const pCol2 = `선발: ${C.bold}${hStarterName}${C.reset} (${hStarterWLE})`;
+  const pRow1 = pCol1 + ' '.repeat(Math.max(2, colW - visLen(pCol1))) + pCol2;
+
+  const pCol1_2 = `구종: ${aPits || '-'} (${aVsOpp})`;
+  const pCol2_2 = `구종: ${hPits || '-'} (${hVsOpp})`;
+  const pRow2 = pCol1_2 + ' '.repeat(Math.max(2, colW - visLen(pCol1_2))) + pCol2_2;
+  
+  out.push('  ' + pRow1, '  ' + pRow2);
+
+  out.push(center(`${C.gray}──────────────────────────────────────────────────────────${C.reset}`, W));
+
+  // 5. Key Players
+  const aTop = pd.awayTopPlayer || {};
+  const hTop = pd.homeTopPlayer || {};
+  const aTopName = aTop.playerInfo?.name || '-';
+  const hTopName = hTop.playerInfo?.name || '-';
+  
+  const aTopStats = aTop.currentSeasonStats || {};
+  const hTopStats = hTop.currentSeasonStats || {};
+  const aTopStatsText = aTopStats.hra ? `${aTopStats.hra} 타율  ${aTopStats.hr}홈런  ${aTopStats.rbi}타점` : '';
+  const hTopStatsText = hTopStats.hra ? `${hTopStats.hra} 타율  ${hTopStats.hr}홈런  ${hTopStats.rbi}타점` : '';
+
+  const kCol1 = `키플레이어: ${C.bold}${aTopName}${C.reset}`;
+  const kCol2 = `키플레이어: ${C.bold}${hTopName}${C.reset}`;
+  const kRow1 = kCol1 + ' '.repeat(Math.max(2, colW - visLen(kCol1))) + kCol2;
+
+  const kCol1_2 = `시즌기록: ${aTopStatsText}`;
+  const kCol2_2 = `시즌기록: ${hTopStatsText}`;
+  const kRow2 = kCol1_2 + ' '.repeat(Math.max(2, colW - visLen(kCol1_2))) + kCol2_2;
+
+  out.push('  ' + kRow1, '  ' + kRow2);
+
+  return out;
+}
+
 function render(bc) {
   if (!config.gui) return;
   const W = termW();
@@ -254,7 +364,16 @@ function render(bc) {
   const out = [headerBar(bc)];
   const bar = gamesBar(bc, W);
   if (bar) out.push(bar);
-  if (bc.gs || bc.inningScore) {
+
+  if (bc.showPreview) {
+    if (showBoard) {
+      if (roomy) out.push('');
+      out.push(...previewBlock(bc, W));
+      if (roomy) out.push('');
+    } else {
+      out.push(center(`${C.dim}Preview (Low height screen)${C.reset}`, W));
+    }
+  } else if (bc.gs || bc.inningScore) {
     if (showBoard) {
       if (roomy) out.push('');
       out.push(...lineScore(bc, W));
@@ -267,6 +386,7 @@ function render(bc) {
   } else {
     out.push('', center(`${C.dim}${bc.status}${C.reset}`, W));
   }
+
   const N = Math.max(3, rows - out.length - 2 - 1 - 1);
   bc.viewN = N;
   out.push(...commentaryBox(bc, W, N));

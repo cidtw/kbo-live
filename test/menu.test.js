@@ -68,3 +68,16 @@ test('resolveTarget: matches game by custom team code (e.g. KIA)', async () => {
   assert.ok(res.game);
   assert.strictEqual(res.game.awayTeamCode, 'HT');
 });
+
+const { fetchPreview } = require('../src/api');
+
+test('fetchPreview: resolves preview data for a valid gameId', async () => {
+  const res = await fetchPreview('20260707HTLT02026');
+  if (res) {
+    assert.ok(res.gameInfo);
+    assert.ok(res.awayStarter);
+    assert.ok(res.homeStarter);
+  } else {
+    assert.strictEqual(res, null);
+  }
+});

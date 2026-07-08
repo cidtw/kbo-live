@@ -101,4 +101,13 @@ async function fetchWeather(stadiumName) {
   return null;
 }
 
-module.exports = { GW, get, getJSON, fetchGamesByDate, fetchGame, fetchRelay, fetchWeather };
+async function fetchPreview(gameId) {
+  const url = `${GW}/schedule/games/${encodeURIComponent(gameId)}/preview`;
+  try {
+    const { data } = await getJSON(url);
+    return data?.result?.previewData || null;
+  } catch (_) {}
+  return null;
+}
+
+module.exports = { GW, get, getJSON, fetchGamesByDate, fetchGame, fetchRelay, fetchWeather, fetchPreview };
