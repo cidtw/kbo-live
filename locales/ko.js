@@ -26,10 +26,11 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   --no-pitches              투구 단위(1구 볼/스트라이크) 라인 숨김
   --no-cache                완료 이닝 로컬 캐시 비활성화
   --no-gui                  스코어보드 없이 로그만 (파이프/기록용)
+  --report                  경기 보고서(Pitch Analysis 포함) 마크다운 파일로 내보내기
   --fahrenheit | -f         구장 기온을 화씨(°F)로 표시 (기본 섭씨)
   --nerd | --emoji | --ascii  아이콘 테마 (기본 nerd = Nerd Font 필요)
 
-조작(GUI): ↑↓ 스크롤 · PageUp/PageDn(Space) · Home/End(g/G 최신) · q·Ctrl+C 종료
+조작(GUI): ↑↓ 스크롤 · PageUp/PageDn(Space) · Home/End(g/G 최신) · e 리포트 내보내기 · q·Ctrl+C 종료
 `.trim(),
 
   // 상태 문구
@@ -81,7 +82,7 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
 
   // 스코어보드
   commentaryTitle: '문자중계',
-  scrollHint: '↑↓ 스크롤 · [1-9]/←→ 전환 · p 전력분석 · Tab 경기기록 · m 메뉴 · q 종료',
+  scrollHint: '↑↓ 스크롤 · [1-9]/←→ 전환 · p 전력분석 · Tab 경기기록 · e 리포트 내보내기 · m 메뉴 · q 종료',
   endHint: 'G 최신',
   scrollPast: ({ end, total }) => `과거 보기 ${end}/${total}`,
   moreAbove: (n) => ` ↑ 이전 ${n}줄 `,
@@ -96,6 +97,7 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   endBanner: '— 중계 종료 —',
   errorLabel: '오류',
   menuTitle: 'KBO 리그 경기 선택 (메인 메뉴)',
-  menuInstruction: '방향키 위/아래(k/j) 이동 · Enter 선택 · q 종료',
+  menuInstruction: '위/아래(k/j) 이동 · 좌/우(h/l) 날짜 변경 · d 날짜 지정 · Enter 경기 이력(r 리플레이) · q 종료',
   menuDate: (d) => `날짜: ${d}`,
 };
+

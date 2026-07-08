@@ -3,10 +3,19 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { clampNum, parseDateArg, dw, truncW } = require('../src/util');
-const { truncColor } = require('../src/ansi');
+const { clampNum, parseDateArg, dw, truncW, addDays } = require('../src/util');
+const { truncColor, visLen, center } = require('../src/ansi');
+
+test('visLen / center: 숫자 및 무효값 방어', () => {
+  assert.strictEqual(visLen(123), 3);
+  assert.strictEqual(visLen(null), 0);
+  assert.strictEqual(visLen(undefined), 0);
+  assert.strictEqual(center(12, 6), '  12  ');
+});
+
 
 test('clampNum: NaN·범위 밖 입력 방어 (핫루프 폴링 방지)', () => {
+
   assert.strictEqual(clampNum('abc', 5, 300, 10), 10);
   assert.strictEqual(clampNum(0, 5, 300, 10), 5);
   assert.strictEqual(clampNum(-3, 5, 300, 10), 5);
@@ -57,3 +66,11 @@ test('sleepOrInterrupt: 완주 및 switchRequested에 의한 조기 종료', asy
   assert.strictEqual(res2, true);
   assert.ok(elapsed2 < 200, `elapsed2 was ${elapsed2}`);
 });
+
+test('addDays: 날짜 문자열 일수 가감', () => {
+  assert.strictEqual(addDays('2026-07-09', 1), '2026-07-10');
+  assert.strictEqual(addDays('2026-07-09', -1), '2026-07-08');
+  assert.strictEqual(addDays('2026-12-31', 1), '2027-01-01');
+  assert.strictEqual(addDays('invalid', 1), 'invalid');
+});
+

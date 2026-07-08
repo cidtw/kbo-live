@@ -137,3 +137,33 @@ test('로그 캡: 4000줄 초과 시 shift 하되 스크롤 위치 보정', () =
   assert.ok(bc.log.length <= 4000);
   assert.ok(bc.viewBottom < 10); // shift 만큼 당겨짐
 });
+
+test('투구 데이터(구속, 구종) 통계 축적 검증', () => {
+  const bc = fresh();
+  bc.ingestRelay(FIXTURE);
+  
+  // FIXTURE 에 있는 투구수 데이터 확인
+  const evs = Broadcast.flatten(FIXTURE);
+  const pitchEvs = evs.filter(e => e.type === 1);
+  assert.ok(pitchEvs.length > 0);
+  
+  // 첫 번째 투구 이벤트에 speed, stuff가 정상 추출되었는지 검증
+  const samplePitch = pitchEvs.find(e => e.speed && e.stuff);
+  if (samplePitch) {
+    assert.ok(typeof samplePitch.speed === 'string');
+    assert.ok(typeof samplePitch.stuff === 'string');
+  }
+
+  // 투수별 구종/구속 통계가 정상 축적되었는지 검증
+  const statsKeys = Object.keys(bc.pitchStats);
+  assert.ok(statsKeys.length > 0);
+  const firstStats = bc.pitchStats[statsKeys[0]];
+  assert.ok(Object.keys(firstStats).length > 0);
+  
+  // 구속 카운트 검증
+  const firstStuff = Object.keys(firstStats)[0];
+  const speeds = firstStats[firstStuff];
+  assert.ok(Object.keys(speeds).length > 0);
+  assert.ok(Object.values(speeds)[0].total >= 1);
+});
+

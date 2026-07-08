@@ -24,7 +24,7 @@ const TEAM = { away: 209, home: 79 };
 const CNT = { ball: 40, strike: 220, out: 196 };
 
 // ── 색상 포함 문자열 표시폭(ANSI 제외) ──
-function visLen(s) { return dw(s.replace(/\x1b\[[0-9;]*m/g, '')); }
+function visLen(s) { return dw(String(s ?? '').replace(/\x1b\[[0-9;]*m/g, '')); }
 function padEndWColor(s, width) { const p = width - visLen(s); return p > 0 ? s + ' '.repeat(p) : s; }
 function padStartWColor(s, width) { const p = width - visLen(s); return p > 0 ? ' '.repeat(p) + s : s; }
 // 코드포인트 단위로 자름(서로게이트 쌍 분리 방지). ANSI 시퀀스는 폭 0으로 통과.
@@ -42,10 +42,12 @@ function truncColor(s, width) {
   return out;
 }
 function center(s, width) {
-  const w = visLen(s); if (w >= width) return s;
+  const str = String(s ?? '');
+  const w = visLen(str); if (w >= width) return str;
   const l = Math.floor((width - w) / 2);
-  return ' '.repeat(l) + s + ' '.repeat(width - w - l);
+  return ' '.repeat(l) + str + ' '.repeat(width - w - l);
 }
+
 function justify(left, mid, right, width) {
   const mw = visLen(mid), lw = visLen(left), rw = visLen(right);
   const side = Math.max(1, Math.floor((width - mw) / 2) - Math.max(lw, rw));

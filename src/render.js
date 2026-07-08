@@ -1,7 +1,7 @@
 'use strict';
 
 const config = require('./config');
-const { padEndW, truncW, mapTeamCode } = require('./util');
+const { padEndW, truncW, mapTeamCode, translateStuff } = require('./util');
 const {
   useColor, C, bg, fg256, TEAM, CNT,
   visLen, padEndWColor, truncColor, center,
@@ -370,7 +370,7 @@ function recordSummaryBlock(bc, rd, W) {
   const awayR = rheb.away || { r: 0, h: 0, e: 0, b: 0 };
   const homeR = rheb.home || { r: 0, h: 0, e: 0, b: 0 };
 
-  const rHead = ' '.repeat(16) + '  R   H   E   B';
+  const rHead = ' '.repeat(16) + ' R   H   E   B';
   const rAway = `${C.bold}${fg256(TEAM.away)}${padEndW(aCode + ' ' + aName, 14)}${C.reset}  ${center(awayR.r, 3)} ${center(awayR.h, 3)} ${center(awayR.e, 3)} ${center(awayR.b, 3)}`;
   const rHome = `${C.bold}${fg256(TEAM.home)}${padEndW(hCode + ' ' + hName, 14)}${C.reset}  ${center(homeR.r, 3)} ${center(homeR.h, 3)} ${center(homeR.e, 3)} ${center(homeR.b, 3)}`;
 
@@ -418,7 +418,7 @@ function recordBattersBlock(bc, rd, W) {
   out.push(center(`${C.bold}${C.byellow}RECORD - BATTERS BOXSCORE${C.reset}`, W));
   out.push('');
 
-  const headers = `이름     포  타  안  점  볼  삼  타율`;
+  const headers = `이름   포 타 안 점 볼 삼 타율`;
   const colW = Math.floor((W - 8) / 2);
   
   // Title row
@@ -432,7 +432,7 @@ function recordBattersBlock(bc, rd, W) {
 
   const formatBatter = (b) => {
     if (!b) return '';
-    const name = padEndW(truncW(b.name, 4), 4);
+    const name = padEndW(truncW(b.name, 6), 6);
     const pos = padEndW(truncW(b.pos || '-', 2), 2);
     const ab = String(b.ab ?? 0).padStart(2);
     const hit = String(b.hit ?? 0).padStart(2);
@@ -461,7 +461,7 @@ function recordPitchersBlock(bc, rd, W) {
   out.push(center(`${C.bold}${C.byellow}RECORD - PITCHERS BOXSCORE${C.reset}`, W));
   out.push('');
 
-  const headers = `이름     이닝  타  안  홈  볼  삼  실  자  방어율`;
+  const headers = `이름   이닝 타 안 홈 볼 삼 실 자 방어율 투구`;
   const colW = Math.floor((W - 8) / 2);
 
   const titleRow = `${C.bold}${fg256(TEAM.away)}${padEndW(aName + ' 투수', colW)}${C.reset}  ${C.bold}${fg256(TEAM.home)}${hName} 투수${C.reset}`;
@@ -474,7 +474,7 @@ function recordPitchersBlock(bc, rd, W) {
 
   const formatPitcher = (p) => {
     if (!p) return '';
-    const name = padEndW(truncW(p.name, 4), 4);
+    const name = padEndW(truncW(p.name, 6), 6);
     const inn = padEndW(truncW(p.inn || '-', 4), 4);
     const bf = String(p.pa ?? p.bf ?? 0).padStart(2);
     const hit = String(p.hit ?? 0).padStart(2);
@@ -483,8 +483,9 @@ function recordPitchersBlock(bc, rd, W) {
     const kk = String(p.kk ?? 0).padStart(2);
     const r = String(p.r ?? 0).padStart(2);
     const er = String(p.er ?? 0).padStart(2);
-    const era = p.era || '0.00';
-    return `${name} ${inn} ${bf} ${hit} ${hr} ${bb} ${kk} ${r} ${er} ${era}`;
+    const era = padEndW(p.era || '0.00', 6);
+    const np = String(p.bf || 0).padStart(3);
+    return `${name} ${inn} ${bf} ${hit} ${hr} ${bb} ${kk} ${r} ${er} ${era} ${np}`;
   };
 
   for (let i = 0; i < N; i++) {
@@ -494,10 +495,191 @@ function recordPitchersBlock(bc, rd, W) {
     out.push('  ' + row);
   }
 
+  // 구종/구속 통계 데이터 분석 출력
+  const formatPitcherStats = (stats, names, pcode) => {
+    const name = names[pcode] || pcode;
+    const lines = [];
+    const ballTypes = Object.keys(stats);
+    if (ballTypes.length === 0) return [];
+
+    lines.push(`${C.bold}${name}${C.reset}:`);
+    for (const stuff of ballTypes) {
+      const code = translateStuff(stuff);
+      const speeds = stats[stuff];
+      const sortedSpeeds = Object.keys(speeds).sort((a, b) => {
+        const na = parseInt(a, 10) || 0;
+        const nb = parseInt(b, 10) || 0;
+        return na - nb;
+      });
+      
+      const details = sortedSpeeds.map(sp => {
+        const s = speeds[sp];
+        const spText = sp === 'unknown' ? '?' : `${sp}k`;
+        return `${spText}(S:${s.strike}/B:${s.ball}/H:${s.hit}):${s.total}`;
+      }).join(', ');
+
+      const total = Object.values(speeds).reduce((sum, v) => sum + (v.total || 0), 0);
+      lines.push(`  ${code}: [${details}] (합계 ${total})`);
+    }
+    return lines;
+  };
+
+  const pitchStatsLines = [];
+  const hasStats = Object.keys(bc.pitchStats || {}).length > 0;
+  if (hasStats) {
+    pitchStatsLines.push('');
+    pitchStatsLines.push(center(`${C.bold}${C.byellow}PITCH ANALYSIS (BALL TYPE & VELOCITY)${C.reset}`, W));
+    pitchStatsLines.push(center(`${C.gray}──────────────────────────────────────────────────────────${C.reset}`, W));
+
+    const formatTeamPitchStats = (list) => {
+      const lines = [];
+      list.forEach(p => {
+        if (p.pcode && bc.pitchStats[p.pcode]) {
+          const pStats = bc.pitchStats[p.pcode];
+          const formatted = formatPitcherStats(pStats, bc.names, p.pcode);
+          lines.push(...formatted);
+        }
+      });
+      return lines;
+    };
+
+    const awayStatsLines = formatTeamPitchStats(awayList);
+    const homeStatsLines = formatTeamPitchStats(homeList);
+
+    const maxStatsLen = Math.max(awayStatsLines.length, homeStatsLines.length);
+    for (let i = 0; i < maxStatsLen; i++) {
+      const al = awayStatsLines[i] || '';
+      const hl = homeStatsLines[i] || '';
+      const pad = ' '.repeat(Math.max(2, colW - visLen(al)));
+      pitchStatsLines.push('  ' + al + pad + hl);
+    }
+  }
+
+  out.push(...pitchStatsLines);
+
+  return out;
+}
+
+
+function recordLineupsBlock(bc, W) {
+  const pd = bc.preview;
+  if (!pd) {
+    return [
+      '',
+      center(`${C.dim}Loading lineup data...${C.reset}`, W),
+      ''
+    ];
+  }
+
+  const out = [];
+  out.push(center(`${C.bold}${C.byellow}STARTING LINEUPS & BENCH ROSTERS${C.reset}`, W));
+  out.push('');
+
+  const hName = bc.meta.home?.name || 'HOME';
+  const aName = bc.meta.away?.name || 'AWAY';
+
+  const aLineup = pd.awayTeamLineUp || {};
+  const hLineup = pd.homeTeamLineUp || {};
+
+  const colW = Math.floor((W - 8) / 2);
+
+  const shortHand = (p) => {
+    const bt = p.batsThrows || p.hitType || '';
+    if (!bt) return '';
+    if (bt.includes('좌')) return '좌';
+    if (bt.includes('우')) return '우';
+    if (bt.includes('양')) return '양';
+    return bt.slice(0, 1);
+  };
+
+  const wrapText = (items, maxW) => {
+    const lines = [];
+    let current = '';
+    for (const item of items) {
+      if (!current) {
+        current = item;
+      } else if (visLen(current) + 2 + visLen(item) > maxW) {
+        lines.push(current);
+        current = item;
+      } else {
+        current += ', ' + item;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  };
+
+  const buildTeamLineupLines = (lineup, teamName, teamColor) => {
+    const lines = [];
+    lines.push(`${C.bold}${fg256(teamColor)}${teamName} 라인업${C.reset}`);
+    lines.push(`${C.gray}${'━'.repeat(colW)}${C.reset}`);
+
+    const starters = lineup.fullLineUp || [];
+    const pitcher = starters.find(p => p.positionName === '선발투수' || p.position === '1');
+    const batters = starters.filter(p => p.batorder != null).sort((x, y) => x.batorder - y.batorder);
+
+    if (pitcher && pitcher.playerName) {
+      lines.push(`선발: ${C.bold}${pitcher.playerName}${C.reset} #${pitcher.backnum || '-'} (${shortHand(pitcher)}투)`);
+    } else {
+      lines.push(`선발: -`);
+    }
+    lines.push('');
+
+    batters.forEach(p => {
+      lines.push(`${p.batorder}. ${C.bold}${p.playerName}${C.reset} (${p.positionName || '-'}) #${p.backnum || '-'} (${shortHand(p)}타)`);
+    });
+    for (let i = batters.length; i < 9; i++) {
+      lines.push(`${i + 1}. -`);
+    }
+
+    lines.push('');
+    lines.push(`${C.bold}후보 선수 (Bench)${C.reset}`);
+    lines.push(`${C.gray}${'╌'.repeat(colW)}${C.reset}`);
+
+    const bullpen = lineup.pitcherBullpen || [];
+    const bpItems = bullpen.map(p => `${p.playerName}(${shortHand(p)}투)`);
+    const bpLines = wrapText(bpItems, colW - 6);
+    if (bpLines.length > 0) {
+      bpLines.forEach((l, idx) => {
+        lines.push(idx === 0 ? `불펜: ${l}` : `      ${l}`);
+      });
+    } else {
+      lines.push(`불펜: 없음`);
+    }
+
+    const candidates = lineup.batterCandidate || [];
+    const candItems = candidates.map(p => `${p.playerName}(${p.position ? p.position.slice(0, 2) : '야'}/${shortHand(p)}타)`);
+    const candLines = wrapText(candItems, colW - 6);
+    if (candLines.length > 0) {
+      candLines.forEach((l, idx) => {
+        lines.push(idx === 0 ? `대기: ${l}` : `      ${l}`);
+      });
+    } else {
+      lines.push(`대기: 없음`);
+    }
+
+    return lines;
+  };
+
+  const awayLines = buildTeamLineupLines(aLineup, aName, TEAM.away);
+  const homeLines = buildTeamLineupLines(hLineup, hName, TEAM.home);
+
+  const maxLen = Math.max(awayLines.length, homeLines.length);
+  for (let i = 0; i < maxLen; i++) {
+    const al = awayLines[i] || '';
+    const hl = homeLines[i] || '';
+    const pad = ' '.repeat(Math.max(2, colW - visLen(al)));
+    out.push('  ' + al + pad + hl);
+  }
+
   return out;
 }
 
 function recordBlock(bc, W) {
+  if (bc.recordMode === 'lineups') {
+    return recordLineupsBlock(bc, W);
+  }
+
   const rd = bc.record;
   if (!rd) {
     return [
@@ -516,6 +698,7 @@ function recordBlock(bc, W) {
   }
   return [];
 }
+
 
 function render(bc) {
   if (!config.gui) return;

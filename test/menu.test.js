@@ -77,10 +77,16 @@ test('fetchPreview: resolves preview data for a valid gameId', async () => {
     assert.ok(res.gameInfo);
     assert.ok(res.awayStarter);
     assert.ok(res.homeStarter);
+    assert.ok(res.awayTeamLineUp);
+    assert.ok(res.homeTeamLineUp);
+    assert.ok(Array.isArray(res.awayTeamLineUp.fullLineUp));
+    assert.ok(Array.isArray(res.awayTeamLineUp.pitcherBullpen));
+    assert.ok(Array.isArray(res.awayTeamLineUp.batterCandidate));
   } else {
     assert.strictEqual(res, null);
   }
 });
+
 
 const { fetchRecord } = require('../src/api');
 

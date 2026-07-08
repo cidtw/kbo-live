@@ -114,7 +114,48 @@ function mapTeamCode(code) {
   return TEAM_MAP[upper] || upper;
 }
 
+function addDays(dateStr, days) {
+  if (!dateStr) return dateStr;
+  const date = new Date(dateStr + 'T12:00:00');
+  if (isNaN(date.getTime())) return dateStr;
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const PITCH_MAP = {
+  '직구': 'FF',
+  '투심': 'FT',
+  '커터': 'FC',
+  '싱커': 'SI',
+  '슬라이더': 'SL',
+  '스위퍼': 'ST',
+  '커브': 'CU',
+  '슬로커브': 'SC',
+  '체인지업': 'CH',
+  '포크': 'FO',
+  '너클볼': 'KN',
+};
+
+const translateStuff = (stuff) => {
+  if (!stuff) return '??';
+  if (PITCH_MAP[stuff]) return PITCH_MAP[stuff];
+  const s = String(stuff);
+  if (s.includes('직구') || s.includes('속구') || s.includes('패스트')) return 'FF';
+  if (s.includes('슬라이더')) return 'SL';
+  if (s.includes('체인지업')) return 'CH';
+  if (s.includes('커브')) return 'CU';
+  if (s.includes('투심')) return 'FT';
+  if (s.includes('커터')) return 'FC';
+  if (s.includes('포크') || s.includes('스플')) return 'SF';
+  if (s.includes('싱커')) return 'SI';
+  if (s.includes('스위퍼')) return 'SW';
+  if (s.includes('너클')) return 'KN';
+  return s.slice(0, 2);
+};
+
 module.exports = {
   clampNum, kstDateStr, parseDateArg, isWide, dw, padEndW, padStartW, truncW, sleep, sleepOrInterrupt,
-  TEAM_MAP, REVERSE_TEAM_MAP, mapTeamCode
+  TEAM_MAP, REVERSE_TEAM_MAP, mapTeamCode, addDays, translateStuff
 };
+
+

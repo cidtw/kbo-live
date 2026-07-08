@@ -302,7 +302,7 @@ async function runReplay(bc, game, opts) {
     bc._absorbMeta(data);
     for (const ev of evs) {
       if (bc.switchRequested || bc.menuRequested) return;
-      bc.ingestRelay({ textRelays: [{ inn: ev.inn, homeOrAway: ev.ha, textOptions: [{ seqno: ev.seq, type: ev.type, text: ev.text, currentGameState: ev.gs, batterRecord: ev.batterRecord }] }] });
+      bc.ingestRelay({ textRelays: [{ inn: ev.inn, homeOrAway: ev.ha, textOptions: [{ seqno: ev.seq, type: ev.type, text: ev.text, currentGameState: ev.gs, batterRecord: ev.batterRecord, speed: ev.speed, stuff: ev.stuff }] }] });
       render(bc);
       if (bc.ended) break;
       if (config.pitches || (ev.type !== 1 && ev.type !== 8)) {

@@ -27,10 +27,11 @@ Options:
   --no-pitches              hide per-pitch lines (ball/strike), results only
   --no-cache                disable local caching of completed innings
   --no-gui                  log only, no scoreboard (for pipes)
+  --report                  export game report (including Pitch Analysis) as markdown
   --fahrenheit | -f         show temperatures in Fahrenheit (default Celsius)
   --nerd | --emoji | --ascii  icon theme (default nerd = needs a Nerd Font)
 
-Controls (GUI): arrows scroll · PageUp/PageDn (Space) · Home/End (g/G latest) · q/Ctrl+C quit
+Controls (GUI): arrows scroll · PageUp/PageDn (Space) · Home/End (g/G latest) · e export report · q/Ctrl+C quit
 
 Note: relay text is Korean only (source: Naver Sports).
 `.trim(),
@@ -79,7 +80,7 @@ Note: relay text is Korean only (source: Naver Sports).
   connectStart: ({ away, home }) => `${away} vs ${home} — waiting for first pitch`,
 
   commentaryTitle: 'COMMENTARY',
-  scrollHint: 'arrows scroll · [1-9]/←→ switch · p preview · Tab record · m menu · q quit',
+  scrollHint: 'arrows scroll · [1-9]/←→ switch · p preview · Tab record · e report · m menu · q quit',
   endHint: 'G latest',
   scrollPast: ({ end, total }) => `viewing past ${end}/${total}`,
   moreAbove: (n) => ` ↑ ${n} more `,
@@ -94,6 +95,7 @@ Note: relay text is Korean only (source: Naver Sports).
   endBanner: '— end of commentary —',
   errorLabel: 'Error',
   menuTitle: 'KBO Match Selector',
-  menuInstruction: 'Up/Down (k/j) navigate · Enter select · q quit',
+  menuInstruction: 'Up/Down (k/j) nav · Left/Right (h/l) date · d custom date · Enter history (r replay) · q quit',
   menuDate: (d) => `Date: ${d}`,
 };
+

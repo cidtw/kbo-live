@@ -4,6 +4,8 @@ const config = require('./config');
 const { C } = require('./ansi');
 const { i18n } = require('./i18n');
 const { printPlainLine } = require('./render');
+const { translateStuff } = require('./util');
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 야구 중계 도메인. lol-live 의 Broadcast 와 같은 역할이지만 훨씬 단순하다:
@@ -33,7 +35,9 @@ class Broadcast {
     this.follow = true;         // true=최신 하단 추적, false=스크롤로 과거 보는 중
     this.viewBottom = 0;        // follow=false 일 때 화면에 보일 마지막 로그 인덱스
     this.viewN = 10;            // 현재 중계창 표시 줄 수(render 가 갱신)
+    this.pitchStats = {};       // 투수 투구수 데이터 통계 { pitcherPcode: { stuff: { speed: count } } }
   }
+
 
   teamName(side) { return this.meta[side]?.code || this.meta[side]?.name || side; }
 
@@ -74,12 +78,16 @@ class Broadcast {
           gs: o.currentGameState || null,
           inn: block.inn, ha: String(block.homeOrAway), // '0'=초(원정 공격) '1'=말(홈 공격)
           batterRecord: o.batterRecord || null,
+          speed: o.speed || null,
+          stuff: o.stuff || null,
+          pitchResult: o.pitchResult || null,
         });
       }
     }
     evs.sort((a, b) => a.seq - b.seq);
     return evs;
   }
+
 
   // 한 relay 응답을 ingest. silent=true 면 상태만 갱신하고 라인은 만들지 않는다
   // (--no-history 접속 시 현재 이닝 이벤트 폭탄 방지). 새로 처리한 이벤트 수를 돌려준다.
@@ -111,6 +119,45 @@ class Broadcast {
     if (ev.batterRecord) this.batterNow = ev.batterRecord;
     if (config.replay) this._rebuildInningScore(ev);
 
+    // 투구 데이터 통계 수집
+    if (ev.type === 1) {
+      const pitcherPcode = ev.gs?.pitcher;
+      if (pitcherPcode) {
+        const speed = ev.speed;
+        const stuff = ev.stuff;
+        if (stuff) {
+          if (!this.pitchStats[pitcherPcode]) {
+            this.pitchStats[pitcherPcode] = {};
+          }
+          if (!this.pitchStats[pitcherPcode][stuff]) {
+            this.pitchStats[pitcherPcode][stuff] = {};
+          }
+          const spKey = speed || 'unknown';
+          if (!this.pitchStats[pitcherPcode][stuff][spKey]) {
+            this.pitchStats[pitcherPcode][stuff][spKey] = { strike: 0, ball: 0, hit: 0, total: 0 };
+          }
+          const stats = this.pitchStats[pitcherPcode][stuff][spKey];
+          const result = ev.pitchResult;
+          if (result === 'B') {
+            stats.ball++;
+          } else if (result === 'H') {
+            stats.hit++;
+          } else if (result === 'T' || result === 'S' || result === 'F') {
+            stats.strike++;
+          } else {
+            // fallback using text
+            const text = ev.text || '';
+            if (text.includes('볼')) stats.ball++;
+            else if (text.includes('타격')) stats.hit++;
+            else if (text.includes('스트라이크') || text.includes('파울') || text.includes('헛스윙')) stats.strike++;
+            else stats.strike++; // default to strike
+          }
+          stats.total++;
+        }
+      }
+    }
+
+
     const text = ev.text.trim();
     if (!text) return;
     if (/경기\s*종료|^승리투수/.test(text)) this.ended = true;
@@ -134,8 +181,17 @@ class Broadcast {
         this.addLine('inning', `${C.bold}${text}${C.reset}`, C.cyan);
         break;
       case 1: // 투구
-        if (config.pitches) this.addLine('pitch', text, C.gray);
+        if (config.pitches) {
+          let pitchText = text;
+          if (ev.speed || ev.stuff) {
+            const code = translateStuff(ev.stuff);
+            const speedText = ev.speed ? `${ev.speed}k` : '?';
+            pitchText += ` (${speedText} ${code})`;
+          }
+          this.addLine('pitch', pitchText, C.gray);
+        }
         break;
+
       case 8: // 타자 등장
         if (config.pitches) this.addLine('batter', text, C.white);
         break;

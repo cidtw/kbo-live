@@ -8,8 +8,9 @@ const { i18n, setLocale } = require('./i18n');
 const { Broadcast } = require('./broadcast');
 const { render, scrollBy, renderSelectorMenu } = require('./render');
 const { resolveTarget, gameMeta, runLive, runReplay, showList } = require('./runner');
-const { clampNum, parseDateArg, sleep, kstDateStr } = require('./util');
+const { clampNum, parseDateArg, sleep, kstDateStr, addDays } = require('./util');
 const { fetchGamesByDate } = require('./api');
+
 
 function parseArgs(argv) {
   const a = {
@@ -37,6 +38,7 @@ function parseArgs(argv) {
       case '--locale': case '--lang': a.locale = next(); break;
       case '--interval': a.interval = next(); break;
       case '--speed': a.speed = next(); break;
+      case '--report': a.report = true; break;
       case '--no-gui': a.gui = false; break;
       case '--no-history': a.history = false; break;
       case '--no-cache': a.cache = false; break;
@@ -73,6 +75,44 @@ async function main() {
 
   if (config.cache) require('./cache').prune(20); // 최근 20경기만 보관(LRU)
   const target = await resolveTarget(opts);
+
+  if (opts.report) {
+    if (!target.game) {
+      throw new Error('Please specify a game with --game-id, a team name, or --replay to export a report.');
+    }
+    const { fetchRelay, fetchPreview, fetchRecord } = require('./api');
+    const { Broadcast } = require('./broadcast');
+    const { exportReport } = require('./report');
+
+    console.log(`Fetching game data for ${target.game.gameId}...`);
+    const bc = new Broadcast(gameMeta(target.game));
+
+    // Fetch preview & record in parallel
+    const [preview, record] = await Promise.all([
+      fetchPreview(target.game.gameId).catch(() => null),
+      fetchRecord(target.game.gameId).catch(() => null)
+    ]);
+    bc.preview = preview;
+    bc.record = record;
+
+    // Fetch all innings
+    const latestRelay = await fetchRelay(target.game.gameId);
+    if (!latestRelay) {
+      throw new Error('No commentary data found for this game.');
+    }
+    const lastInn = Number(latestRelay.inn) || 1;
+    const isDone = target.game.statusCode === 'RESULT';
+    for (let i = 1; i <= lastInn; i++) {
+      try {
+        const inningRelay = await fetchRelay(target.game.gameId, i, isDone);
+        bc.ingestRelay(inningRelay);
+      } catch (_) {}
+    }
+
+    const { filename } = exportReport(bc);
+    console.log(`Successfully exported KBO Game Report to: ${filename}`);
+    return;
+  }
 
   // Fetch games of the day
   let games = [];
@@ -138,6 +178,43 @@ async function main() {
       if ((key.ctrl && key.name === 'c') || s === 'q' || key.name === 'q') { restoreTerminal(); process.exit(0); }
 
       if (activeMode === 'menu') {
+        let date = opts.date || kstDateStr();
+        if (key.name === 'left' || s === 'h') {
+          const prevDate = addDays(date, -1);
+          if (menuResolver) {
+            menuResolver({ type: 'CHANGE_DATE', date: prevDate });
+          }
+          return;
+        } else if (key.name === 'right' || s === 'l') {
+          const nextDate = addDays(date, 1);
+          if (menuResolver) {
+            menuResolver({ type: 'CHANGE_DATE', date: nextDate });
+          }
+          return;
+        } else if (s === 'd') {
+          restoreTerminal();
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+          rl.question('\nEnter Date (YYYY-MM-DD or MMDD): ', (answer) => {
+            rl.close();
+            if (rawOn) {
+              process.stdout.write(ENTER);
+              process.stdin.setRawMode(true);
+              process.stdin.resume();
+              restored = false;
+            }
+            const parsed = parseDateArg(answer);
+            if (parsed && menuResolver) {
+              menuResolver({ type: 'CHANGE_DATE', date: parsed });
+            } else {
+              renderSelectorMenu(games, selectedIdx, date);
+            }
+          });
+          return;
+        }
+
         if (!games || games.length === 0) return;
         if (key.name === 'up' || s === 'k') {
           selectedIdx = (selectedIdx - 1 + games.length) % games.length;
@@ -146,15 +223,23 @@ async function main() {
         } else if (key.name === 'return' || key.name === 'enter') {
           const chosen = games[selectedIdx];
           if (menuResolver) {
-            menuResolver(chosen);
+            menuResolver({ type: 'SELECT_GAME', game: chosen, replay: false });
+          }
+          return;
+        } else if (s === 'r' || key.name === 'r') {
+          const chosen = games[selectedIdx];
+          if (chosen && chosen.statusCode === 'RESULT') {
+            if (menuResolver) {
+              menuResolver({ type: 'SELECT_GAME', game: chosen, replay: true });
+            }
           }
           return;
         } else return;
 
-        let date = opts.date || kstDateStr();
         renderSelectorMenu(games, selectedIdx, date);
         return;
       }
+
 
       if (!currentBc) return;
 
@@ -203,12 +288,27 @@ async function main() {
         if (!bc.recordMode) bc.recordMode = 'summary';
         else if (bc.recordMode === 'summary') bc.recordMode = 'batters';
         else if (bc.recordMode === 'batters') bc.recordMode = 'pitchers';
+        else if (bc.recordMode === 'pitchers') bc.recordMode = 'lineups';
         else bc.recordMode = null;
 
         if (bc.recordMode) bc.showPreview = false;
         render(bc);
         return;
       }
+
+      // Export report key: 'e'
+      if (s === 'e' || key.name === 'e') {
+        const { exportReport } = require('./report');
+        try {
+          const { filename } = exportReport(bc);
+          bc.addLine('info', `Exported to ${filename}`, C.cyan);
+        } catch (err) {
+          bc.addLine('info', `Export failed: ${err.message}`, C.red);
+        }
+        render(bc);
+        return;
+      }
+
 
       // Back to menu keys: 'm', 'escape', 'backspace'
       if (s === 'm' || key.name === 'm' || key.name === 'escape' || key.name === 'backspace') {
@@ -237,11 +337,29 @@ async function main() {
       let date = opts.date || kstDateStr();
       renderSelectorMenu(games, selectedIdx, date);
 
-      const chosen = await waitMenuSelection();
-      activeGame = chosen;
-      activeReplay = chosen.statusCode === 'RESULT';
-      activeMode = 'spectate';
+      const result = await waitMenuSelection();
+      if (result && result.type === 'CHANGE_DATE') {
+        opts.date = result.date;
+        selectedIdx = 0;
+        try {
+          games = await fetchGamesByDate(opts.date);
+        } catch (_) {
+          games = [];
+        }
+        continue;
+      }
+
+      if (result && result.type === 'SELECT_GAME') {
+        activeGame = result.game;
+        activeReplay = result.replay;
+        activeMode = 'spectate';
+      } else {
+        activeGame = result;
+        activeReplay = result && result.statusCode === 'RESULT';
+        activeMode = 'spectate';
+      }
     }
+
 
     if (!activeGame) break;
 
