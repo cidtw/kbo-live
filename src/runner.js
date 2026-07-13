@@ -4,30 +4,18 @@ const readline = require('readline');
 const config = require('./config');
 const { C, fg256, TEAM } = require('./ansi');
 const { sleep, sleepOrInterrupt, kstDateStr, REVERSE_TEAM_MAP } = require('./util');
-const { fetchGamesByDate, fetchGame, fetchRelay, fetchWeather, fetchPreview, fetchRecord } = require('./api');
+const defaultApi = require('./api');
 const { Broadcast } = require('./broadcast');
 const { render } = require('./render');
 const { i18n } = require('./i18n');
+const { isLive, isDone, gameMeta } = require('./runner_meta');
+const { debug, warn } = require('./log');
 
 function ask(question) {
   return new Promise((resolve) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); });
   });
-}
-
-const isLive = (g) => g && !g.cancel && g.statusCode !== 'BEFORE' && g.statusCode !== 'READY' && g.statusCode !== 'RESULT';
-const isDone = (g) => g && g.statusCode === 'RESULT';
-
-function gameMeta(g) {
-  return {
-    gameId: g.gameId,
-    league: g.categoryName || 'KBO리그',
-    stadium: g.stadium || '',
-    startTime: g.gameDateTime,
-    home: { code: g.homeTeamCode, name: g.homeTeamName },
-    away: { code: g.awayTeamCode, name: g.awayTeamName },
-  };
 }
 
 function matchTeam(g, q) {
@@ -41,19 +29,23 @@ function matchTeam(g, q) {
     .some((v) => v && searchTerms.some((term) => String(v).toLowerCase().includes(term)));
 }
 
-// 중계 대상 경기 결정 → { game, replay, menu, games }
-async function resolveTarget(opts) {
+/**
+ * Resolve broadcast target.
+ * @returns {Promise<{game?, replay?, menu?, games?, exitCode?}>}
+ * If no game can be chosen interactively, returns { exitCode } instead of process.exit.
+ */
+async function resolveTarget(opts, deps = {}) {
+  const api = { ...defaultApi, ...deps };
   const t = i18n.t;
   if (opts.gameId) {
-    const g = await fetchGame(opts.gameId);
+    const g = await api.fetchGame(opts.gameId);
     if (!g) throw new Error(t.errGameNotFound);
     return { game: g, replay: opts.replay || (opts.replayWanted && isDone(g)) };
   }
   const date = opts.date || kstDateStr();
-  const games = await fetchGamesByDate(date);
+  const games = await api.fetchGamesByDate(date);
   if (!games.length) throw new Error(t.noGamesDate(date));
 
-  // If the user did not specify a team and is in GUI/interactive terminal mode, trigger menu selector!
   if (!opts.team && !opts.replay && config.gui && process.stdin.isTTY && process.stdout.isTTY) {
     return { menu: true, games };
   }
@@ -64,7 +56,6 @@ async function resolveTarget(opts) {
     if (!pool.length) throw new Error(t.teamNotFound(opts.team));
   }
 
-  // --replay (id 없이): 대상 풀에서 최근 종료 경기
   if (opts.replay) {
     const done = pool.filter(isDone);
     if (!done.length) throw new Error(t.errFeedNotFound);
@@ -84,11 +75,9 @@ async function resolveTarget(opts) {
     return { game: chosen, replay: false };
   }
 
-  // 라이브 없음: 팀을 지정했고 경기 전이면 시작 대기 모드로 진행
   const before = pool.filter((g) => (g.statusCode === 'BEFORE' || g.statusCode === 'READY') && !g.cancel);
   if (opts.team && before.length) return { game: before[0], replay: false };
 
-  // 자동 탐색 실패 → 최근 종료 경기 리플레이 제안
   console.log(`${C.yellow}${t.noLiveNow}${C.reset}`);
   const done = pool.filter(isDone);
   if (done.length && process.stdin.isTTY) {
@@ -98,11 +87,11 @@ async function resolveTarget(opts) {
   }
   console.log(t.startHint);
   console.log(t.replayHint);
-  process.exit(before.length ? 0 : 1);
+  return { exitCode: before.length ? 0 : 1 };
 }
 
-// 경기 전이면 시작까지 대기 (30초 간격 상태 폴링)
-async function waitForStart(bc, game, opts) {
+async function waitForStart(bc, game, opts, deps = {}) {
+  const api = { ...defaultApi, ...deps };
   const t = i18n.t;
   let g = game;
   while (g && (g.statusCode === 'BEFORE' || g.statusCode === 'READY') && !g.cancel) {
@@ -111,20 +100,30 @@ async function waitForStart(bc, game, opts) {
     render(bc);
     if (!config.gui) console.log(bc.status);
     if (await sleepOrInterrupt(30 * 1000, bc)) return null;
-    try { g = await fetchGame(game.gameId); } catch (_) {}
+    try {
+      g = await api.fetchGame(game.gameId);
+    } catch (e) {
+      debug('waitForStart fetchGame failed', e.message);
+    }
   }
   if (g && g.cancel) { bc.addLine('info', t.gameCancelled, C.yellow); render(bc); return null; }
   return g || game;
 }
 
-// 접속 시 1회부터 현재 이닝까지 복원. relay(i)는 완료 이닝이면 캐시를 탄다.
-async function backfillHistory(bc, gameId, curRelay, finished) {
+async function backfillHistory(bc, gameId, curRelay, finished, deps = {}) {
+  const api = { ...defaultApi, ...deps };
   const t = i18n.t;
   const cur = Number(curRelay?.inn) || 1;
   for (let i = 1; i < cur; i++) {
     if (bc.switchRequested || bc.menuRequested) return;
     let data;
-    try { data = await fetchRelay(gameId, i, finished); } catch (_) { continue; }
+    try {
+      data = await api.fetchRelay(gameId, i, finished);
+    } catch (e) {
+      debug(`backfill inn ${i} failed`, e.message);
+      if (config.verbose) warn(`backfill failed inning ${i}: ${e.message}`);
+      continue;
+    }
     bc.ingestRelay(data);
     bc.status = t.loadingHistoryAt(i);
     render(bc);
@@ -145,44 +144,54 @@ function finish(bc, kind) {
   render(bc);
 }
 
-async function runLive(bc, game, opts) {
-  const t = i18n.t;
-  bc.status = t.waitingFeed;
-  render(bc);
-
+function attachSidePanels(bc, game, api) {
   if (game.stadium) {
-    fetchWeather(game.stadium).then(w => {
+    api.fetchWeather(game.stadium).then((w) => {
       if (w) {
         bc.weather = w;
         render(bc);
       }
-    }).catch(() => {});
+    }).catch((e) => debug('weather failed', e.message));
   }
-
   if (game.gameId) {
-    fetchPreview(game.gameId).then(p => {
+    api.fetchPreview(game.gameId).then((p) => {
       if (p) {
         bc.preview = p;
         render(bc);
       }
-    }).catch(() => {});
-    fetchRecord(game.gameId).then(r => {
+    }).catch((e) => debug('preview failed', e.message));
+    api.fetchRecord(game.gameId).then((r) => {
       if (r) {
         bc.record = r;
         render(bc);
       }
-    }).catch(() => {});
+    }).catch((e) => debug('record failed', e.message));
   }
+}
 
-  const started = await waitForStart(bc, game, opts);
+async function runLive(bc, game, opts, deps = {}) {
+  const api = { ...defaultApi, ...deps };
+  const t = i18n.t;
+  bc.status = t.waitingFeed;
+  render(bc);
+  attachSidePanels(bc, game, api);
+
+  const started = await waitForStart(bc, game, opts, api);
   if (!started || bc.switchRequested || bc.menuRequested) return;
 
-  // 첫 relay 확보 (경기 직후엔 피드가 늦을 수 있음 → 재시도)
   let first = null;
   for (let i = 0; i < 20 && !first; i++) {
     if (bc.switchRequested || bc.menuRequested) return;
-    try { first = await fetchRelay(game.gameId); } catch (_) {}
-    if (!first) { bc.status = t.syncing(i + 1); render(bc); if (await sleepOrInterrupt(6000, bc)) return; }
+    try {
+      first = await api.fetchRelay(game.gameId);
+    } catch (e) {
+      debug('first relay failed', e.message);
+    }
+    if (!first) {
+      bc.status = t.syncing(i + 1);
+      render(bc);
+      if (await sleepOrInterrupt(6000, bc)) return;
+    }
   }
   if (bc.switchRequested || bc.menuRequested) return;
   if (!first) throw new Error(t.errFeedNotFound);
@@ -190,11 +199,11 @@ async function runLive(bc, game, opts) {
   if (opts.history !== false) {
     bc.status = t.loadingHistory;
     render(bc);
-    await backfillHistory(bc, game.gameId, first, isDone(started));
+    await backfillHistory(bc, game.gameId, first, isDone(started), api);
     if (bc.switchRequested || bc.menuRequested) return;
     bc.addLine('info', t.historyDone, C.cyan);
   } else {
-    bc.ingestRelay(first, { silent: true }); // 무음 베이스라인
+    bc.ingestRelay(first, { silent: true });
     bc.addLine('info', t.connectMid({
       away: bc.meta.away?.name, home: bc.meta.home?.name,
       inn: t.innLabel({ inn: bc.inn || 1, half: bc.half }),
@@ -207,16 +216,25 @@ async function runLive(bc, game, opts) {
   while (!bc.ended) {
     if (await sleepOrInterrupt(opts.interval * 1000, bc)) break;
     let relay;
-    try { relay = await fetchRelay(game.gameId); }
-    catch (e) { bc.status = t.errorStatus(e.message); render(bc); continue; }
+    try {
+      relay = await api.fetchRelay(game.gameId);
+    } catch (e) {
+      bc.status = t.errorStatus(e.message);
+      render(bc);
+      continue;
+    }
     if (bc.switchRequested || bc.menuRequested) break;
     if (relay) {
-      // 이닝 경계에서 폴링이 놓친 구간(seqno 공백) → 지난 이닝 재수집으로 메꾼다
       if (bc.hasGapBefore(relay)) {
         const from = Math.max(1, bc.inn);
         for (let i = from; i < (Number(relay.inn) || from); i++) {
           if (bc.switchRequested || bc.menuRequested) break;
-          try { bc.ingestRelay(await fetchRelay(game.gameId, i)); } catch (_) {}
+          try {
+            bc.ingestRelay(await api.fetchRelay(game.gameId, i));
+          } catch (e) {
+            debug(`gap backfill inn ${i}`, e.message);
+            if (config.verbose) warn(`gap backfill failed inning ${i}: ${e.message}`);
+          }
         }
       }
       if (bc.switchRequested || bc.menuRequested) break;
@@ -225,25 +243,34 @@ async function runLive(bc, game, opts) {
       render(bc);
     }
     poll++;
-    // Every 3 polls (approx 30s), refresh the games list of the day to update scores of other games
     if (poll % 3 === 0) {
       try {
         const date = opts.date || kstDateStr();
-        bc.games = await fetchGamesByDate(date);
+        bc.games = await api.fetchGamesByDate(date);
         render(bc);
-      } catch (_) {}
+      } catch (e) {
+        debug('games refresh failed', e.message);
+      }
     }
-    // 문자중계에 종료 문구가 없을 때를 대비해 주기적으로 경기 상태도 확인
     if (!bc.ended && poll % 6 === 0) {
       try {
-        const g = await fetchGame(game.gameId);
+        const g = await api.fetchGame(game.gameId);
         if (bc.switchRequested || bc.menuRequested) break;
         if (isDone(g)) {
-          try { bc.ingestRelay(await fetchRelay(game.gameId)); } catch (_) {}
+          try {
+            bc.ingestRelay(await api.fetchRelay(game.gameId));
+          } catch (e) {
+            debug('final relay failed', e.message);
+          }
           break;
         }
-        if (g && g.cancel) { bc.addLine('info', t.gameCancelled, C.yellow); break; }
-      } catch (_) {}
+        if (g && g.cancel) {
+          bc.addLine('info', t.gameCancelled, C.yellow);
+          break;
+        }
+      } catch (e) {
+        debug('status poll failed', e.message);
+      }
     }
   }
   if (!bc.switchRequested && !bc.menuRequested) {
@@ -251,76 +278,83 @@ async function runLive(bc, game, opts) {
   }
 }
 
-// 이벤트 type별 재생 템포(ms). --speed 로 나눈다.
 const PACE = { 0: 1500, 1: 650, 8: 550, 13: 1200, 14: 500, 23: 1300, 24: 1000 };
 
-async function runReplay(bc, game, opts) {
+async function runReplay(bc, game, opts, deps = {}) {
+  const api = { ...defaultApi, ...deps };
   const t = i18n.t;
+  const prevReplay = config.replay;
   config.replay = true;
-  bc.status = t.replayPreparing;
-  render(bc);
+  try {
+    bc.status = t.replayPreparing;
+    render(bc);
+    attachSidePanels(bc, game, api);
 
-  if (game.stadium) {
-    fetchWeather(game.stadium).then(w => {
-      if (w) {
-        bc.weather = w;
-        render(bc);
-      }
-    }).catch(() => {});
-  }
-
-  if (game.gameId) {
-    fetchPreview(game.gameId).then(p => {
-      if (p) {
-        bc.preview = p;
-        render(bc);
-      }
-    }).catch(() => {});
-    fetchRecord(game.gameId).then(r => {
-      if (r) {
-        bc.record = r;
-        render(bc);
-      }
-    }).catch(() => {});
-  }
-
-  const latest = await fetchRelay(game.gameId);
-  if (bc.switchRequested || bc.menuRequested) return;
-  if (!latest) throw new Error((game.statusCode === 'BEFORE' || game.statusCode === 'READY') ? t.errNotStarted : t.errFeedNotFound);
-  const finished = isDone(game);
-  const lastInn = Number(latest.inn) || 1;
-
-  for (let i = 1; i <= lastInn && !bc.ended; i++) {
+    const latest = await api.fetchRelay(game.gameId);
     if (bc.switchRequested || bc.menuRequested) return;
-    let data;
-    try { data = await fetchRelay(game.gameId, i, finished); } // 완료 경기는 마지막 이닝까지 캐시에 남는다
-    catch (e) { bc.status = t.errorStatus(e.message); render(bc); continue; }
-    if (!data) continue;
-    bc.status = t.statusReplay;
-    // 이벤트 단위로 한 줄씩 재생. ingestRelay 가 seqno 커서로 중복을 걸러준다.
-    const evs = Broadcast.flatten(data).filter((e) => e.seq > bc.lastSeq);
-    bc._absorbMeta(data);
-    for (const ev of evs) {
+    if (!latest) {
+      throw new Error((game.statusCode === 'BEFORE' || game.statusCode === 'READY') ? t.errNotStarted : t.errFeedNotFound);
+    }
+    const finished = isDone(game);
+    const lastInn = Number(latest.inn) || 1;
+
+    for (let i = 1; i <= lastInn && !bc.ended; i++) {
       if (bc.switchRequested || bc.menuRequested) return;
-      bc.ingestRelay({ textRelays: [{ inn: ev.inn, homeOrAway: ev.ha, textOptions: [{ seqno: ev.seq, type: ev.type, text: ev.text, currentGameState: ev.gs, batterRecord: ev.batterRecord, speed: ev.speed, stuff: ev.stuff }] }] });
-      render(bc);
-      if (bc.ended) break;
-      if (config.pitches || (ev.type !== 1 && ev.type !== 8)) {
-        if (await sleepOrInterrupt(Math.max(30, (PACE[ev.type] || 700) / opts.speed), bc)) return;
+      let data;
+      try {
+        data = await api.fetchRelay(game.gameId, i, finished);
+      } catch (e) {
+        bc.status = t.errorStatus(e.message);
+        render(bc);
+        continue;
+      }
+      if (!data) continue;
+      bc.status = t.statusReplay;
+      const evs = Broadcast.flatten(data).filter((e) => e.seq > bc.lastSeq);
+      bc.absorbMeta(data);
+      for (const ev of evs) {
+        if (bc.switchRequested || bc.menuRequested) return;
+        bc.ingestRelay({
+          textRelays: [{
+            inn: ev.inn,
+            homeOrAway: ev.ha,
+            textOptions: [{
+              seqno: ev.seq,
+              type: ev.type,
+              text: ev.text,
+              currentGameState: ev.gs,
+              batterRecord: ev.batterRecord,
+              speed: ev.speed,
+              stuff: ev.stuff,
+              pitchResult: ev.pitchResult,
+            }],
+          }],
+        });
+        render(bc);
+        if (bc.ended) break;
+        if (config.pitches || (ev.type !== 1 && ev.type !== 8)) {
+          if (await sleepOrInterrupt(Math.max(30, (PACE[ev.type] || 700) / opts.speed), bc)) return;
+        }
       }
     }
-  }
-  if (!bc.switchRequested && !bc.menuRequested) {
-    finish(bc, 'replay');
+    if (!bc.switchRequested && !bc.menuRequested) {
+      finish(bc, 'replay');
+    }
+  } finally {
+    config.replay = prevReplay;
   }
 }
 
-async function showList(opts) {
+async function showList(opts, deps = {}) {
+  const api = { ...defaultApi, ...deps };
   const t = i18n.t;
   const date = opts.date || kstDateStr();
-  const games = await fetchGamesByDate(date);
+  const games = await api.fetchGamesByDate(date);
   console.log(`\n${C.bold}${t.listTitle(date)}${C.reset}`);
-  if (!games.length) { console.log(t.noGamesDate(date)); return; }
+  if (!games.length) {
+    console.log(t.noGamesDate(date));
+    return;
+  }
   const groups = [
     [t.listLive, C.bred, games.filter(isLive)],
     [t.listBefore, C.yellow, games.filter((g) => (g.statusCode === 'BEFORE' || g.statusCode === 'READY') && !g.cancel)],
@@ -328,7 +362,10 @@ async function showList(opts) {
   ];
   for (const [label, col, list] of groups) {
     console.log(`\n${col}${C.bold}${label}${C.reset}`);
-    if (!list.length) { console.log(t.listNone); continue; }
+    if (!list.length) {
+      console.log(t.listNone);
+      continue;
+    }
     for (const g of list) {
       const score = (g.statusCode === 'BEFORE' || g.statusCode === 'READY')
         ? new Date(g.gameDateTime).toLocaleTimeString(t.dateLocale, { hour: '2-digit', minute: '2-digit' })
@@ -342,4 +379,15 @@ async function showList(opts) {
   console.log(t.replayHint);
 }
 
-module.exports = { ask, resolveTarget, gameMeta, runLive, runReplay, showList, waitForStart, backfillHistory };
+module.exports = {
+  ask,
+  resolveTarget,
+  gameMeta,
+  runLive,
+  runReplay,
+  showList,
+  waitForStart,
+  backfillHistory,
+  isLive,
+  isDone,
+};

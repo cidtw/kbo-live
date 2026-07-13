@@ -27,10 +27,14 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   --no-cache                완료 이닝 로컬 캐시 비활성화
   --no-gui                  스코어보드 없이 로그만 (파이프/기록용)
   --report                  경기 보고서(Pitch Analysis 포함) 마크다운 파일로 내보내기
+  --verbose | -v            디버그 로그를 stderr 로 출력 (또는 KBO_LIVE_DEBUG=1)
   --fahrenheit | -f         구장 기온을 화씨(°F)로 표시 (기본 섭씨)
   --nerd | --emoji | --ascii  아이콘 테마 (기본 nerd = Nerd Font 필요)
 
-조작(GUI): ↑↓ 스크롤 · PageUp/PageDn(Space) · Home/End(g/G 최신) · e 리포트 내보내기 · q·Ctrl+C 종료
+조작(GUI):
+  스크롤  ↑↓ / k j · PageUp/Dn · b/Space · g/G(최신)
+  전환    1-9 게임바 · ←→ 인접 경기 · m/Esc 메뉴
+  패널    p 전력분석 · Tab 경기기록 · e 리포트 내보내기 · q 종료
 `.trim(),
 
   // 상태 문구
@@ -99,5 +103,12 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   menuTitle: 'KBO 리그 경기 선택 (메인 메뉴)',
   menuInstruction: '위/아래(k/j) 이동 · 좌/우(h/l) 날짜 변경 · d 날짜 지정 · Enter 경기 이력(r 리플레이) · q 종료',
   menuDate: (d) => `날짜: ${d}`,
+
+  errReportNeedGame: '보고서를 내보내려면 --game-id, 팀명, 또는 --replay 로 경기를 지정하세요.',
+  reportFetching: (id) => `${id} 경기 데이터를 가져오는 중…`,
+  reportExported: (f) => `KBO 경기 보고서를 내보냈습니다: ${f}`,
+  reportExportedShort: (f) => `내보냄: ${f}`,
+  reportExportFailed: (m) => `내보내기 실패: ${m}`,
+  reportPartial: (failed, total) => `일부 이닝 로드 실패 (${failed.join(', ')} / 총 ${total}회) — 부분 보고서입니다.`,
 };
 

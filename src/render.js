@@ -700,12 +700,11 @@ function recordBlock(bc, W) {
 }
 
 
-function render(bc) {
-  if (!config.gui) return;
-  const W = termW();
-  const rows = process.stdout.rows || 32;
-  const roomy = rows >= 26;
-  const showBoard = rows >= 16;
+function buildFrame(bc, { columns, rows } = {}) {
+  const W = columns != null ? Math.max(60, Math.min(columns, 120)) : termW();
+  const R = rows != null ? rows : (process.stdout.rows || 32);
+  const roomy = R >= 26;
+  const showBoard = R >= 16;
   const out = [headerBar(bc)];
   const bar = gamesBar(bc, W);
   if (bar) out.push(bar);
@@ -740,10 +739,21 @@ function render(bc) {
     out.push('', center(`${C.dim}${bc.status}${C.reset}`, W));
   }
 
-  const N = Math.max(3, rows - out.length - 2 - 1 - 1);
+  const N = Math.max(3, R - out.length - 2 - 1 - 1);
   bc.viewN = N;
   out.push(...commentaryBox(bc, W, N));
-  out.push(`${C.dim}${i18n.t.footer({ theme: config.theme, W, rows })}${C.reset}`);
+  out.push(`${C.dim}${i18n.t.footer({ theme: config.theme, W, rows: R })}${C.reset}`);
+  return out;
+}
+
+/** Pure frame as string lines (for tests / no TTY). */
+function renderToString(bc, opts = {}) {
+  return buildFrame(bc, opts).join('\n');
+}
+
+function render(bc) {
+  if (!config.gui) return;
+  const out = buildFrame(bc);
   // 커서 홈 → 줄마다 끝 지우기(K) → 아래 남은 줄 지우기(J). 대체 화면 버퍼에서 그리므로 깜빡임 없음.
   process.stdout.write('\x1b[H' + out.map((l) => l + '\x1b[K').join('\n') + '\x1b[J');
 }
@@ -826,4 +836,7 @@ function renderSelectorMenu(games, selectedIdx, date) {
   process.stdout.write('\x1b[H' + out.map((l) => l + '\x1b[K').join('\n') + '\x1b[J');
 }
 
-module.exports = { render, printPlainLine, scrollBy, clampView, termW, renderSelectorMenu };
+module.exports = {
+  render, renderToString, buildFrame, printPlainLine, scrollBy, clampView, termW, renderSelectorMenu,
+  headerBar, lineScore, diamondBlock, weatherText, gamesBar, compactScore,
+};

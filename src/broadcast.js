@@ -56,7 +56,8 @@ class Broadcast {
 
   // 라인업/선수명 사전 갱신 (relay 응답마다 최신본으로 교체)
   // 리플레이에선 relay.inningScore 가 "최종" 스코어라 스포일러 → 이벤트에서 재구성한다.
-  _absorbMeta(relay) {
+  absorbMeta(relay) {
+    if (!relay) return;
     if (relay.inningScore && !config.replay) this.inningScore = relay.inningScore;
     for (const [side, key] of [['home', 'homeLineup'], ['away', 'awayLineup']]) {
       const lu = relay[key];
@@ -66,6 +67,11 @@ class Broadcast {
         if (p.pcode) this.names[p.pcode] = p.name;
       }
     }
+  }
+
+  /** @deprecated use absorbMeta */
+  _absorbMeta(relay) {
+    return this.absorbMeta(relay);
   }
 
   // relay 응답의 블록들을 전역 seqno 순으로 평탄화
@@ -93,7 +99,7 @@ class Broadcast {
   // (--no-history 접속 시 현재 이닝 이벤트 폭탄 방지). 새로 처리한 이벤트 수를 돌려준다.
   ingestRelay(relay, { silent = false } = {}) {
     if (!relay) return 0;
-    this._absorbMeta(relay);
+    this.absorbMeta(relay);
     const evs = Broadcast.flatten(relay);
     let n = 0;
     for (const ev of evs) {

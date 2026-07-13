@@ -122,6 +122,13 @@ function addDays(dateStr, days) {
   return date.toISOString().slice(0, 10);
 }
 
+// gameId 앞 8자리(YYYYMMDD) → YYYY-MM-DD. 형식이 아니면 null.
+function gameIdToDate(gameId) {
+  if (!gameId || !/^\d{8}/.test(String(gameId))) return null;
+  const ymd = String(gameId).slice(0, 8);
+  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+}
+
 const PITCH_MAP = {
   '직구': 'FF',
   '투심': 'FT',
@@ -155,7 +162,7 @@ const translateStuff = (stuff) => {
 
 module.exports = {
   clampNum, kstDateStr, parseDateArg, isWide, dw, padEndW, padStartW, truncW, sleep, sleepOrInterrupt,
-  TEAM_MAP, REVERSE_TEAM_MAP, mapTeamCode, addDays, translateStuff
+  TEAM_MAP, REVERSE_TEAM_MAP, mapTeamCode, addDays, gameIdToDate, translateStuff
 };
 
 

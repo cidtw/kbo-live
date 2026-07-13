@@ -2,8 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-
-const { clampNum, parseDateArg, dw, truncW, addDays } = require('../src/util');
+const { clampNum, parseDateArg, dw, truncW, addDays, gameIdToDate } = require('../src/util');
 const { truncColor, visLen, center } = require('../src/ansi');
 
 test('visLen / center: 숫자 및 무효값 방어', () => {
@@ -74,3 +73,9 @@ test('addDays: 날짜 문자열 일수 가감', () => {
   assert.strictEqual(addDays('invalid', 1), 'invalid');
 });
 
+
+test('gameIdToDate: YYYYMMDD prefix', () => {
+  assert.strictEqual(gameIdToDate('20260707HTLT02026'), '2026-07-07');
+  assert.strictEqual(gameIdToDate('bad'), null);
+  assert.strictEqual(gameIdToDate(null), null);
+});

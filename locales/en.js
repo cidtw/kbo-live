@@ -28,10 +28,14 @@ Options:
   --no-cache                disable local caching of completed innings
   --no-gui                  log only, no scoreboard (for pipes)
   --report                  export game report (including Pitch Analysis) as markdown
+  --verbose | -v            debug logs on stderr (or KBO_LIVE_DEBUG=1)
   --fahrenheit | -f         show temperatures in Fahrenheit (default Celsius)
   --nerd | --emoji | --ascii  icon theme (default nerd = needs a Nerd Font)
 
-Controls (GUI): arrows scroll · PageUp/PageDn (Space) · Home/End (g/G latest) · e export report · q/Ctrl+C quit
+Controls (GUI):
+  scroll   arrows / k j · PageUp/Dn · b/Space · g/G (follow latest)
+  switch   1-9 game bar · ←→ adjacent · m/Esc menu
+  panels   p preview · Tab record · e export report · q quit
 
 Note: relay text is Korean only (source: Naver Sports).
 `.trim(),
@@ -80,7 +84,7 @@ Note: relay text is Korean only (source: Naver Sports).
   connectStart: ({ away, home }) => `${away} vs ${home} — waiting for first pitch`,
 
   commentaryTitle: 'COMMENTARY',
-  scrollHint: 'arrows scroll · [1-9]/←→ switch · p preview · Tab record · e report · m menu · q quit',
+  scrollHint: 'arrows scroll · [1-9]/←→ switch game · p preview · Tab record · e report · m menu · q quit',
   endHint: 'G latest',
   scrollPast: ({ end, total }) => `viewing past ${end}/${total}`,
   moreAbove: (n) => ` ↑ ${n} more `,
@@ -97,5 +101,12 @@ Note: relay text is Korean only (source: Naver Sports).
   menuTitle: 'KBO Match Selector',
   menuInstruction: 'Up/Down (k/j) nav · Left/Right (h/l) date · d custom date · Enter history (r replay) · q quit',
   menuDate: (d) => `Date: ${d}`,
+
+  errReportNeedGame: 'Specify a game with --game-id, a team name, or --replay to export a report.',
+  reportFetching: (id) => `Fetching game data for ${id}...`,
+  reportExported: (f) => `Exported KBO game report to: ${f}`,
+  reportExportedShort: (f) => `Exported to ${f}`,
+  reportExportFailed: (m) => `Export failed: ${m}`,
+  reportPartial: (failed, total) => `Partial report: failed innings ${failed.join(', ')} of ${total}`,
 };
 

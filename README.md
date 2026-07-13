@@ -12,6 +12,7 @@ node bin/kbo-live.js              # 오늘 라이브 경기 자동 탐색 → �
 node bin/kbo-live.js 롯데         # 오늘 롯데 경기 (경기 전이면 시작까지 대기)
 node bin/kbo-live.js --list       # 오늘 경기 목록 (라이브/예정/종료)
 node bin/kbo-live.js --replay 20260707HTLT02026   # 종료 경기 리플레이
+node bin/kbo-live.js --report --game-id 20260707HTLT02026
 ```
 
 ## 사용법
@@ -22,6 +23,7 @@ kbo-live <팀명|팀코드>        오늘 해당 팀 경기 중계 (예: 롯데 
 kbo-live --list [--date 날짜] 경기 목록
 kbo-live --game-id <id>      특정 경기 중계
 kbo-live --replay <gameId>   종료된 경기를 처음부터 리플레이
+kbo-live --report …          마크다운 경기 보고서(투구 분석 포함) 내보내기
 ```
 
 ### 옵션
@@ -36,11 +38,31 @@ kbo-live --replay <gameId>   종료된 경기를 처음부터 리플레이
 | `--no-pitches` | 투구 단위(1구 볼/스트라이크) 라인 숨김 — 결과 중심 중계 |
 | `--no-cache` | 완료 이닝 로컬 캐시 비활성화 |
 | `--no-gui` | 스코어보드 없이 로그만 (파이프/기록용) |
+| `--report` | 경기 보고서 마크다운 내보내기 |
+| `--verbose` / `-v` | 디버그 로그 stderr (`KBO_LIVE_DEBUG=1` 과 동일) |
 | `--nerd \| --emoji \| --ascii` | 아이콘 테마 (기본 `nerd` = Nerd Font 필요) |
 
 ### 조작 (GUI)
 
-`↑↓` 스크롤 · `PageUp`/`PageDn` (`Space`) · `Home`/`End` (`g`/`G` 최신) · `q`·`Ctrl+C` 종료
+| 모드 | 키 | 동작 |
+|------|-----|------|
+| 공통 | `q` / `Ctrl+C` | 종료 |
+| 메뉴 | `↑↓` / `k` `j` | 경기 선택 |
+| 메뉴 | `←→` / `h` `l` | 날짜 ±1일 |
+| 메뉴 | `d` | 날짜 직접 입력 |
+| 메뉴 | `Enter` | 중계 시작 |
+| 메뉴 | `r` | 종료 경기 리플레이 |
+| 중계 | `↑↓` / `k` `j` | 스크롤 |
+| 중계 | `PageUp`/`PageDn` · `b`/`Space` | 페이지 스크롤 |
+| 중계 | `g` / `G` | 맨 위 / 최신 follow |
+| 중계 | `1`–`9` | 게임 바 순번 전환 |
+| 중계 | `←` `→` | 인접 경기 전환 |
+| 중계 | `p` | 전력분석 패널 |
+| 중계 | `Tab` | 경기기록 패널 순환 |
+| 중계 | `e` | 마크다운 리포트 내보내기 |
+| 중계 | `m` / `Esc` | 메뉴로 돌아가기 |
+
+키 매핑 정본: `src/input.js` (`KEYBINDINGS`).
 
 ## 화면 구성
 
@@ -93,12 +115,27 @@ kbo-live --replay <gameId>   종료된 경기를 처음부터 리플레이
 ## 개발
 
 ```bash
-node --test        # 테스트 (실경기 픽스처 기반, 네트워크 불필요)
+npm test              # 오프라인 기본 (픽스처 + 목 HTTP)
+npm run check         # 구문 검사
+KBO_LIVE_LIVE_NET=1 npm test   # 실네트워크 스모크(선택)
 ```
 
-구조: `src/` — `api`(네이버 어댑터) · `cache`(불변 이닝 LRU 캐시) ·
-`broadcast`(이벤트 스트림 도메인, seqno 커서) · `render`(TUI) ·
-`runner`(라이브/리플레이/목록) · `cli`(인자·터미널 수명주기).
+구조:
+
+```
+bin/kbo-live.js
+src/
+  cli.js           인자 · 모드 루프
+  input.js         키 → action (순수)
+  terminal.js      대체 화면 / raw mode
+  runner.js        resolveTarget · runLive · runReplay
+  game_loader.js   전체 이닝 로드 (--report)
+  api.js           createApi({ get }) · Naver GW
+  broadcast.js     seqno 커서 도메인
+  render.js        TUI (renderToString 테스트 가능)
+  cache.js · report.js · config.js · log.js · util · ansi · theme · i18n
+```
+
 `util`/`ansi`/`theme`/`i18n` 은 lol-live 와 공유하는 스포츠 무관 코어입니다.
 
 ## License
