@@ -817,12 +817,24 @@ function renderSelectorMenu(games, selectedIdx, date) {
 
   const leftPad = Math.max(0, Math.floor((W - 74) / 2));
   const padStr = ' '.repeat(leftPad);
+  const list = Array.isArray(games) ? games : [];
 
-  games.forEach((g, i) => {
-    const isSelected = i === selectedIdx;
-    const itemStr = formatSelectorItem(g, i + 1, isSelected);
-    out.push(padStr + itemStr);
-  });
+  if (list.length === 0) {
+    const emptyTitle = typeof t.menuEmptyTitle === 'function'
+      ? t.menuEmptyTitle(date)
+      : (typeof t.noGamesDate === 'function' ? t.noGamesDate(date) : 'No games');
+    out.push('');
+    out.push(center(`${C.yellow}${C.bold}${emptyTitle}${C.reset}`, W));
+    out.push('');
+    out.push(center(`${C.dim}${t.menuEmptyHint || '←→ / h l change date · d pick date · q quit'}${C.reset}`, W));
+    out.push('');
+  } else {
+    list.forEach((g, i) => {
+      const isSelected = i === selectedIdx;
+      const itemStr = formatSelectorItem(g, i + 1, isSelected);
+      out.push(padStr + itemStr);
+    });
+  }
 
   const contentHeight = out.length;
   const padY = Math.max(2, Math.floor((rows - contentHeight - 6) / 2));

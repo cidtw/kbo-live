@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720pt;
+    height: 720pt;
+    font-family: 'Pretendard', sans-serif;
+    background: #FFFFFF;
+    color: #000000;
+    position: relative;
+    overflow: hidden;
+    padding: 56pt;
+    display: flex;
+    flex-direction: column;
+  }
+  .mono { font-family: 'Space Mono', monospace; }
+  .tag {
+    display: inline-block;
+    background: #F5F500;
+    border: 3pt solid #000000;
+    box-shadow: 6pt 6pt 0 0 #000000;
+    padding: 6pt 14pt;
+    font-size: 13pt;
+    font-weight: 700;
+  }
+  .cols {
+    margin-top: 40pt;
+    flex: 1;
+    display: flex;
+    gap: 28pt;
+  }
+  .col {
+    flex: 1;
+    border: 4pt solid #000000;
+    box-shadow: 8pt 8pt 0 0 #000000;
+    padding: 24pt 20pt;
+    display: flex;
+    flex-direction: column;
+  }
+  .col.win { background: #FF2D55; color: #FFFFFF; }
+  .col.lose { background: #FFFFFF; color: #000000; }
+  .badge {
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .name {
+    margin-top: 14pt;
+    font-size: 30pt;
+    font-weight: 900;
+  }
+  .record {
+    margin-top: 4pt;
+    font-size: 14pt;
+    font-weight: 700;
+  }
+  .stat-list {
+    margin-top: 24pt;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+  }
+  .stat-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14pt;
+    font-weight: 700;
+    border-top: 2pt solid currentColor;
+    padding-top: 8pt;
+    opacity: 0.92;
+  }
+  .stat-list li:first-child { border-top: none; padding-top: 0; }
+</style>
+</head>
+<body>
+  <span class="tag mono">DECISION</span>
+
+  <div class="cols mono">
+    <div class="col win">
+      <p class="badge">WIN</p>
+      <p class="name">나균안</p>
+      <p class="record">5승 7패</p>
+      <ul class="stat-list">
+        <li><span>IP</span><span>5⅔</span></li>
+        <li><span>H</span><span>7</span></li>
+        <li><span>SO</span><span>7</span></li>
+        <li><span>ER</span><span>2</span></li>
+        <li><span>PITCH</span><span>94</span></li>
+      </ul>
+    </div>
+    <div class="col lose">
+      <p class="badge">LOSE</p>
+      <p class="name">네일</p>
+      <p class="record">5승 5패</p>
+      <ul class="stat-list">
+        <li><span>IP</span><span>3⅓</span></li>
+        <li><span>H</span><span>7</span></li>
+        <li><span>SO</span><span>2</span></li>
+        <li><span>ER</span><span>5</span></li>
+        <li><span>PITCH</span><span>61</span></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

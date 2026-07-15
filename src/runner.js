@@ -44,11 +44,15 @@ async function resolveTarget(opts, deps = {}) {
   }
   const date = opts.date || kstDateStr();
   const games = await api.fetchGamesByDate(date);
-  if (!games.length) throw new Error(t.noGamesDate(date));
 
-  if (!opts.team && !opts.replay && config.gui && process.stdin.isTTY && process.stdout.isTTY) {
-    return { menu: true, games };
+  // 경기 없는 날에도 GUI 메뉴로 들어가 날짜 이동할 수 있게 한다.
+  const interactiveMenu = !opts.team && !opts.replay && !opts.gameId
+    && config.gui && process.stdin.isTTY && process.stdout.isTTY;
+  if (interactiveMenu) {
+    return { menu: true, games: games || [] };
   }
+
+  if (!games.length) throw new Error(t.noGamesDate(date));
 
   let pool = games;
   if (opts.team) {

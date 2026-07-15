@@ -259,8 +259,14 @@ async function main() {
 
   while (true) {
     if (activeMode === 'menu') {
-      const liveIdx = games.findIndex((g) => g.statusCode !== 'BEFORE' && g.statusCode !== 'READY' && g.statusCode !== 'RESULT' && !g.cancel);
-      if (liveIdx >= 0 && selectedIdx === 0) selectedIdx = liveIdx;
+      if (!Array.isArray(games)) games = [];
+      if (games.length === 0) {
+        selectedIdx = 0;
+      } else {
+        if (selectedIdx >= games.length) selectedIdx = 0;
+        const liveIdx = games.findIndex((g) => g.statusCode !== 'BEFORE' && g.statusCode !== 'READY' && g.statusCode !== 'RESULT' && !g.cancel);
+        if (liveIdx >= 0 && selectedIdx === 0) selectedIdx = liveIdx;
+      }
 
       const date = opts.date || kstDateStr();
       renderSelectorMenu(games, selectedIdx, date);

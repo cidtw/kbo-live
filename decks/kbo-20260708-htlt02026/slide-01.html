@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720pt;
+    height: 720pt;
+    font-family: 'Pretendard', sans-serif;
+    background: #F5F500;
+    color: #000000;
+    position: relative;
+    overflow: hidden;
+    padding: 56pt;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .mono { font-family: 'Space Mono', monospace; }
+  .tag {
+    display: inline-block;
+    background: #FFFFFF;
+    border: 3pt solid #000000;
+    box-shadow: 6pt 6pt 0 0 #000000;
+    padding: 6pt 14pt;
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .headline {
+    font-weight: 900;
+    font-size: 60pt;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    margin-top: 20pt;
+    font-size: 16pt;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .scoreboard {
+    background: #FFFFFF;
+    border: 4pt solid #000000;
+    box-shadow: 9pt 9pt 0 0 #000000;
+    padding: 20pt 28pt;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transform: rotate(-1.2deg);
+  }
+  .team-label {
+    font-size: 15pt;
+    font-weight: 700;
+  }
+  .score-num {
+    font-size: 44pt;
+    font-weight: 700;
+  }
+  .score-num.win { color: #FF2D55; }
+</style>
+</head>
+<body>
+  <div>
+    <span class="tag mono" style="transform: rotate(-2deg); display: inline-block;">KBO 2026 · REGULAR SEASON</span>
+  </div>
+
+  <div>
+    <h1 class="headline">롯데,<br>사직에서<br>짜릿한 1-0 신승</h1>
+    <p class="subtitle mono">2026.7.8 · KIA vs 롯데 · 사직구장</p>
+  </div>
+
+  <div class="scoreboard">
+    <div style="text-align: left;">
+      <p class="team-label">KIA</p>
+      <p class="score-num mono">0</p>
+    </div>
+    <p class="mono" style="font-size: 24pt; font-weight: 700;">:</p>
+    <div style="text-align: right;">
+      <p class="team-label">롯데</p>
+      <p class="score-num mono win">1</p>
+    </div>
+  </div>
+</body>
+</html>

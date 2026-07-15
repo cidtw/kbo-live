@@ -65,6 +65,8 @@ kbo-live — KBO 리그 실시간 문자중계 CLI (비공식 네이버 스포�
   replayHint: '리플레이:  kbo-live --replay <gameId>',
   noLiveNow: '지금 라이브 중인 KBO 경기가 없습니다.',
   noGamesDate: (d) => `${d} 에는 KBO 경기가 없습니다.`,
+  menuEmptyTitle: (d) => `${d} · 경기 없음`,
+  menuEmptyHint: '←→ / h l 로 다른 날짜 이동 · d 날짜 지정 · q 종료',
   multiLive: '라이브 경기가 여러 개입니다. 번호를 선택하세요:',
   pickLiveNum: '번호 입력 (기본 1): ',
   confirmReplayLatest: ({ away, home }) => `최근 종료 경기 ${away} vs ${home} 를 리플레이할까요? [Y/n] `,

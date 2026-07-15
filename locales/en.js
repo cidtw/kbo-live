@@ -66,6 +66,8 @@ Note: relay text is Korean only (source: Naver Sports).
   replayHint: 'Replay:  kbo-live --replay <gameId>',
   noLiveNow: 'No KBO game is live right now.',
   noGamesDate: (d) => `No KBO games on ${d}.`,
+  menuEmptyTitle: (d) => `${d} · No games`,
+  menuEmptyHint: '←→ / h l change date · d pick date · q quit',
   multiLive: 'Multiple live games. Pick a number:',
   pickLiveNum: 'Number (default 1): ',
   confirmReplayLatest: ({ away, home }) => `Replay the latest finished game ${away} vs ${home}? [Y/n] `,
