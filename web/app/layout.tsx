@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KBO Live - 실시간 야구 중계 & 투수 혹사 지수 데이터셋",
-  description: "KBO 리그의 실시간 문자중계와 투수 등판 기록 기반 혹사 지수(Overwork Score) 데이터셋을 확인하세요.",
+  title: "KBO Live - 실시간 야구 중계 & 분석 플랫폼",
+  description: "KBO 리그의 실시간 문자중계, 투수 혹사 지수, 투수 등판 일지(PTS 3D 궤적), 라인업 및 FA 서비스타임 데이터셋을 한눈에 확인하세요.",
 };
 
 export default function RootLayout({
@@ -35,26 +35,26 @@ export default function RootLayout({
                   className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center gap-1.5"
                 >
                   <span>🔥</span>
-                  <span>투수 혹사 지수 (Table Dataset)</span>
+                  <span>투수 혹사 지수</span>
                 </Link>
                 <Link
                   href="/journal"
                   className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center gap-1.5"
                 >
                   <span>🎯</span>
-                  <span>투수 등판 일지 & PTS 궤적</span>
+                  <span>등판 일지 & PTS</span>
                 </Link>
                 <Link
                   href="/roster-fa"
-                  className="px-3 py-1.5 rounded-lg text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 hover:bg-emerald-900/50 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center gap-1.5"
                 >
                   <span>📋</span>
-                  <span>라인업·등록말소 & FA 서비스타임</span>
+                  <span>라인업 & FA</span>
                 </Link>
               </nav>
             </div>
             <div className="text-xs text-slate-400 hidden sm:block">
-              10개 구단 투수 피로도 분석 엔진
+              KBO 실시간 중계 및 통합 분석 대시보드
             </div>
           </div>
         </header>
