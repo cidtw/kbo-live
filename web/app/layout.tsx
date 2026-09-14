@@ -39,10 +39,17 @@ export default function RootLayout({
                 </Link>
                 <Link
                   href="/journal"
-                  className="px-3 py-1.5 rounded-lg text-blue-400 font-semibold bg-blue-950/50 border border-blue-800/50 hover:bg-blue-900/50 transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors flex items-center gap-1.5"
                 >
                   <span>🎯</span>
                   <span>투수 등판 일지 & PTS 궤적</span>
+                </Link>
+                <Link
+                  href="/roster-fa"
+                  className="px-3 py-1.5 rounded-lg text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-800/50 hover:bg-emerald-900/50 transition-colors flex items-center gap-1.5"
+                >
+                  <span>📋</span>
+                  <span>라인업·등록말소 & FA 서비스타임</span>
                 </Link>
               </nav>
             </div>
