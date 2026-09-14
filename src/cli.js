@@ -46,6 +46,7 @@ function parseArgs(argv) {
       case '--interval': a.interval = next(); break;
       case '--speed': a.speed = next(); break;
       case '--report': a.report = true; break;
+      case '--overwork': case '--fatigue': a.overwork = true; break;
       case '--verbose': case '-v': a.verbose = true; break;
       case '--no-gui': a.gui = false; break;
       case '--no-history': a.history = false; break;
@@ -87,6 +88,11 @@ async function main() {
   }
   if (opts.list) {
     await showList(opts);
+    return;
+  }
+  if (opts.overwork) {
+    const { showOverworkReport } = require('./overwork_cli');
+    await showOverworkReport(opts);
     return;
   }
 

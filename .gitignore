@@ -5,6 +5,8 @@ report_*.md
 graphify-out/
 web/node_modules/
 web/.next/
+.cache/
+web/.cache/
 .env
 .env.*
 !.env.example
