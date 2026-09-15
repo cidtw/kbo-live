@@ -89,15 +89,15 @@ export const CommentaryFeed: React.FC<CommentaryFeedProps> = ({ log }) => {
       case 'strikeout':
         return 'bg-toss-primarySoft text-toss-primary font-semibold border-l-4 border-toss-primary text-sm';
       case 'walk':
-        return 'bg-toss-warningYellowSoft text-amber-800 font-semibold border-l-4 border-toss-warningYellow text-sm';
+        return 'bg-toss-warningYellowSoft text-amber-300 font-semibold border-l-4 border-toss-warningYellow text-sm';
       case 'out':
-        return 'bg-toss-primarySoft/40 text-toss-primary/80 border-l-4 border-toss-primary/30 text-sm';
+        return 'bg-toss-primarySoft/40 text-toss-primary/90 border-l-4 border-toss-primary/30 text-sm';
       case 'steal':
-        return 'bg-toss-warningYellowSoft/50 text-amber-800 border-l-4 border-toss-warningYellow/60 text-sm';
+        return 'bg-toss-warningYellowSoft/50 text-amber-300 border-l-4 border-toss-warningYellow/60 text-sm';
       case 'change':
         return 'bg-toss-surfaceMuted text-toss-inkSecondary border-l-4 border-toss-borderMedium text-xs md:text-sm';
       case 'error':
-        return 'bg-orange-50 text-orange-800 font-semibold border-l-4 border-orange-500 text-xs md:text-sm';
+        return 'bg-orange-950/40 text-orange-300 font-semibold border-l-4 border-orange-500 text-xs md:text-sm';
       case 'inning':
         return 'bg-toss-canvas text-toss-inkPrimary text-center font-black text-sm py-3 my-2.5 rounded-toss-lg select-none border border-toss-borderLight';
       case 'pitch':
@@ -105,7 +105,7 @@ export const CommentaryFeed: React.FC<CommentaryFeedProps> = ({ log }) => {
       case 'batter':
         return 'bg-toss-surfaceMuted/50 text-toss-inkTertiary pl-6 text-xs border-none font-semibold';
       case 'end':
-        return 'bg-toss-inkPrimary border-y border-toss-borderMedium text-white text-center font-bold py-3.5 my-3 rounded-toss-lg select-none';
+        return 'bg-slate-800 border-y border-slate-700 text-white text-center font-bold py-3.5 my-3 rounded-toss-lg select-none';
       default:
         return 'bg-toss-surface text-toss-inkSecondary border-l-4 border-toss-borderLight text-sm';
     }

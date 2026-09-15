@@ -83,6 +83,7 @@ export interface DayRosterResponse {
   gamesCount: number;
   teams: TeamRosterSummary[];
   players: PlayerRosterItem[];
+  allPlayers?: PlayerRosterItem[];
   transactions: {
     registered: PlayerRosterItem[];
     deregistered: PlayerRosterItem[];

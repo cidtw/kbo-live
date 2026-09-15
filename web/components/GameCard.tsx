@@ -29,12 +29,12 @@ export const GameCard: React.FC<GameCardProps> = ({ game }) => {
     }
     switch (game.status) {
       case 'LIVE':
-        return 'bg-toss-primarySoft text-toss-primary';
+        return 'bg-toss-primarySoft text-toss-primary border border-blue-500/30 font-bold';
       case 'FINISHED':
-        return 'bg-slate-100 text-toss-inkTertiary';
+        return 'bg-slate-800 text-slate-300 border border-slate-700/80';
       case 'SCHEDULED':
       default:
-        return 'bg-toss-warningYellowSoft text-amber-800';
+        return 'bg-toss-warningYellowSoft text-amber-300 border border-amber-500/30';
     }
   };
 

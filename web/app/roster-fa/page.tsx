@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Navbar } from '@/components/Navbar';
+import { useState, useEffect, useMemo } from 'react';
 import { RosterTable } from '@/components/roster/RosterTable';
 import { LineupBoard } from '@/components/roster/LineupBoard';
 import { FaLeaderboard } from '@/components/roster/FaLeaderboard';
 import { PlayerDetailModal } from '@/components/roster/PlayerDetailModal';
 import { DayRosterResponse, PlayerRosterItem } from '@/types/roster-fa';
+import { isMatchingTeam } from '@/lib/roster-fa-service';
 import {
   Users,
   LayoutGrid,
@@ -19,6 +19,7 @@ import {
   UserCheck,
   UserMinus,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function RosterFaPage() {
@@ -32,12 +33,12 @@ export default function RosterFaPage() {
 
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerRosterItem | null>(null);
 
-  // Fetch data
-  const fetchData = async (targetDate: string, team: string = 'ALL') => {
+  // Fetch data - always fetch full day dataset (team=ALL) so client-side switching is instantaneous
+  const fetchData = async (targetDate: string) => {
     setIsLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/roster-fa?date=${targetDate}&team=${team}`);
+      const res = await fetch(`/api/roster-fa?date=${targetDate}&team=ALL`);
       const json = await res.json();
       if (json.success) {
         setRosterData(json);
@@ -53,23 +54,112 @@ export default function RosterFaPage() {
   };
 
   useEffect(() => {
-    fetchData(date, selectedTeam);
-  }, [date, selectedTeam]);
+    fetchData(date);
+  }, [date]);
 
-  const summary = rosterData?.summary;
+  // All players for current day
+  const basePlayers = rosterData?.allPlayers || rosterData?.players || [];
+
+  // Filtered players based on selected team
+  const filteredPlayers = useMemo(() => {
+    if (!selectedTeam || selectedTeam === 'ALL') return basePlayers;
+    return basePlayers.filter((p) => isMatchingTeam(p.teamName, p.teamCode, selectedTeam));
+  }, [basePlayers, selectedTeam]);
+
+  // Dynamic summary based on selected team
+  const summary = useMemo(() => {
+    if (!rosterData) return null;
+    if (selectedTeam === 'ALL') return rosterData.summary;
+    const starters = filteredPlayers.filter((p) => p.role === 'STARTER').length;
+    const subs = filteredPlayers.filter((p) => p.role === 'SUBSTITUTE').length;
+    const bench = filteredPlayers.filter((p) => p.role === 'BENCH' && p.transaction !== 'OUT').length;
+    const faQualified = filteredPlayers.filter((p) => p.faEligible).length;
+    return {
+      totalPlayers: filteredPlayers.length,
+      totalStarters: starters,
+      totalSubs: subs,
+      totalBench: bench,
+      totalFaQualified: faQualified,
+    };
+  }, [rosterData, selectedTeam, filteredPlayers]);
+
   const transactions = rosterData?.transactions;
+  const teamTransactions = useMemo(() => {
+    if (!transactions) return { registered: [], deregistered: [] };
+    if (selectedTeam === 'ALL') return transactions;
+    return {
+      registered: transactions.registered.filter((p) => isMatchingTeam(p.teamName, p.teamCode, selectedTeam)),
+      deregistered: transactions.deregistered.filter((p) => isMatchingTeam(p.teamName, p.teamCode, selectedTeam)),
+    };
+  }, [transactions, selectedTeam]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Navbar with Date Picker */}
-      <Navbar
-        date={date}
-        onDateChange={setDate}
-        isLoading={isLoading}
-        onRefresh={() => fetchData(date, selectedTeam)}
-        title="KBO 선발·후보 라인업 & 1군 등록/말소·FA 서비스타임 분석"
-        subtitle="경기일자별 선발/교체/벤치 분류 및 145일 기준 KBO 규약 FA 서비스타임 계산기"
-      />
+      {/* Sub-header Controls Bar */}
+      <div className="bg-slate-900 border-b border-slate-800 py-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-bold text-lg tracking-tight text-slate-100">
+                선발·후보 라인업 & 1군 등록/말소·FA 서비스타임
+              </h1>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                KBO 규약 145일 기준
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              경기일자별 28인 엔트리 및 등록/말소 변동, FA 서비스타임 충족 여부 실시간 산출
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Quick date buttons */}
+            <div className="hidden md:flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/60 text-xs">
+              <button
+                onClick={() => setDate('2024-05-15')}
+                className={`px-2.5 py-1 rounded-md transition font-medium ${
+                  date === '2024-05-15'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                5월 15일 (샘플)
+              </button>
+              <button
+                onClick={() => setDate('2024-05-14')}
+                className={`px-2.5 py-1 rounded-md transition font-medium ${
+                  date === '2024-05-14'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                5월 14일
+              </button>
+            </div>
+
+            {/* Date input */}
+            <div className="relative flex items-center">
+              <Calendar className="absolute left-3 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="pl-9 pr-3 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+            </div>
+
+            {/* Refresh Button */}
+            <button
+              onClick={() => fetchData(date, selectedTeam)}
+              disabled={isLoading}
+              title="새로고침"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-400' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
