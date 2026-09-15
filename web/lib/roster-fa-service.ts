@@ -7,27 +7,71 @@ import {
   FaStatus,
 } from '@/types/roster-fa';
 
+export interface CanonicalTeamInfo {
+  code: string;
+  aliasCodes: string[];
+  name: string;
+  fullName: string;
+  color: string;
+  subColor: string;
+}
+
+export const CANONICAL_TEAMS: Record<string, CanonicalTeamInfo> = {
+  KIA: { code: 'KIA', aliasCodes: ['HT', 'KIA'], name: 'KIA', fullName: 'KIA 타이거즈', color: '#EA0029', subColor: '#06141F' },
+  SS: { code: 'SS', aliasCodes: ['SS', 'SL'], name: '삼성', fullName: '삼성 라이온즈', color: '#074CA1', subColor: '#C0C0C0' },
+  LG: { code: 'LG', aliasCodes: ['LG'], name: 'LG', fullName: 'LG 트윈스', color: '#C30452', subColor: '#000000' },
+  OB: { code: 'OB', aliasCodes: ['OB', 'DB'], name: '두산', fullName: '두산 베어스', color: '#131230', subColor: '#ED1C24' },
+  KT: { code: 'KT', aliasCodes: ['KT'], name: 'KT', fullName: 'KT 위즈', color: '#000000', subColor: '#EC1C24' },
+  SSG: { code: 'SSG', aliasCodes: ['SK', 'SSG'], name: 'SSG', fullName: 'SSG 랜더스', color: '#CE0E2D', subColor: '#FFB81C' },
+  LT: { code: 'LT', aliasCodes: ['LT', 'LOT'], name: '롯데', fullName: '롯데 자이언츠', color: '#041E42', subColor: '#DC032A' },
+  HH: { code: 'HH', aliasCodes: ['HH', 'HE'], name: '한화', fullName: '한화 이글스', color: '#FF6600', subColor: '#222222' },
+  NC: { code: 'NC', aliasCodes: ['NC', 'NCD'], name: 'NC', fullName: 'NC 다이노스', color: '#315288', subColor: '#AF9164' },
+  WO: { code: 'WO', aliasCodes: ['WO', 'KH'], name: '키움', fullName: '키움 히어로즈', color: '#570514', subColor: '#B07F46' },
+};
+
+export function resolveTeam(input?: string | null): CanonicalTeamInfo {
+  if (!input) {
+    return { code: 'ETC', aliasCodes: [], name: '기타', fullName: '기타 구단', color: '#334155', subColor: '#64748B' };
+  }
+  const s = String(input).trim().toUpperCase();
+  for (const team of Object.values(CANONICAL_TEAMS)) {
+    if (
+      team.code === s ||
+      team.aliasCodes.includes(s) ||
+      team.name.toUpperCase() === s ||
+      team.fullName.toUpperCase().includes(s)
+    ) {
+      return team;
+    }
+  }
+  return { code: s, aliasCodes: [s], name: input, fullName: input, color: '#334155', subColor: '#64748B' };
+}
+
+export function isMatchingTeam(playerTeamName: string, playerTeamCode: string, targetTeam: string): boolean {
+  if (!targetTeam || targetTeam === 'ALL') return true;
+  const targetMeta = resolveTeam(targetTeam);
+  const pMeta = resolveTeam(playerTeamCode || playerTeamName);
+  return (
+    pMeta.code === targetMeta.code ||
+    pMeta.name === targetMeta.name ||
+    playerTeamName === targetTeam ||
+    playerTeamCode === targetTeam
+  );
+}
+
+// Backward compatibility map
 export const KBO_TEAMS: Record<
   string,
   { name: string; fullName: string; color: string; subColor: string }
-> = {
-  HT: { name: 'KIA', fullName: 'KIA 타이거즈', color: '#EA0029', subColor: '#06141F' },
-  KIA: { name: 'KIA', fullName: 'KIA 타이거즈', color: '#EA0029', subColor: '#06141F' },
-  SS: { name: '삼성', fullName: '삼성 라이온즈', color: '#074CA1', subColor: '#C0C0C0' },
-  LG: { name: 'LG', fullName: 'LG 트윈스', color: '#C30452', subColor: '#000000' },
-  OB: { name: '두산', fullName: '두산 베어스', color: '#131230', subColor: '#ED1C24' },
-  두산: { name: '두산', fullName: '두산 베어스', color: '#131230', subColor: '#ED1C24' },
-  KT: { name: 'KT', fullName: 'KT 위즈', color: '#000000', subColor: '#EC1C24' },
-  SK: { name: 'SSG', fullName: 'SSG 랜더스', color: '#CE0E2D', subColor: '#FFB81C' },
-  SSG: { name: 'SSG', fullName: 'SSG 랜더스', color: '#CE0E2D', subColor: '#FFB81C' },
-  LT: { name: '롯데', fullName: '롯데 자이언츠', color: '#041E42', subColor: '#DC032A' },
-  롯데: { name: '롯데', fullName: '롯데 자이언츠', color: '#041E42', subColor: '#DC032A' },
-  HH: { name: '한화', fullName: '한화 이글스', color: '#FF6600', subColor: '#222222' },
-  한화: { name: '한화', fullName: '한화 이글스', color: '#FF6600', subColor: '#222222' },
-  NC: { name: 'NC', fullName: 'NC 다이노스', color: '#315288', subColor: '#AF9164' },
-  WO: { name: '키움', fullName: '키움 히어로즈', color: '#570514', subColor: '#B07F46' },
-  키움: { name: '키움', fullName: '키움 히어로즈', color: '#570514', subColor: '#B07F46' },
-};
+> = Object.values(CANONICAL_TEAMS).reduce((acc, t) => {
+  acc[t.code] = { name: t.name, fullName: t.fullName, color: t.color, subColor: t.subColor };
+  acc[t.name] = { name: t.name, fullName: t.fullName, color: t.color, subColor: t.subColor };
+  t.aliasCodes.forEach((alias) => {
+    acc[alias] = { name: t.name, fullName: t.fullName, color: t.color, subColor: t.subColor };
+  });
+  return acc;
+}, {} as Record<string, { name: string; fullName: string; color: string; subColor: string }>);
+
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -54,29 +98,40 @@ async function fetchJsonWithCache(url: string) {
   return data;
 }
 
-function mapPosCategory(posName: string): 'PITCHER' | 'CATCHER' | 'INFIELDER' | 'OUTFIELDER' | 'DH' {
-  if (!posName) return 'PITCHER';
-  if (posName.includes('투수') || posName === '투') return 'PITCHER';
-  if (posName.includes('포수') || posName === '포') return 'CATCHER';
+export function mapPosCategory(
+  posName: string | number | undefined,
+  defaultCat: 'PITCHER' | 'CATCHER' | 'INFIELDER' | 'OUTFIELDER' | 'DH' = 'INFIELDER'
+): 'PITCHER' | 'CATCHER' | 'INFIELDER' | 'OUTFIELDER' | 'DH' {
+  if (!posName) return defaultCat;
+  const s = String(posName).trim();
+  if (s.includes('투수') || s === '투' || s === '1') return 'PITCHER';
+  if (s.includes('포수') || s === '포' || s === '2') return 'CATCHER';
   if (
-    posName.includes('1루') ||
-    posName.includes('2루') ||
-    posName.includes('3루') ||
-    posName.includes('유격') ||
-    posName.includes('내야')
+    s.includes('1루') ||
+    s.includes('2루') ||
+    s.includes('3루') ||
+    s.includes('유격') ||
+    s.includes('내야') ||
+    s === '3' ||
+    s === '4' ||
+    s === '5' ||
+    s === '6'
   ) {
     return 'INFIELDER';
   }
   if (
-    posName.includes('좌익') ||
-    posName.includes('중견') ||
-    posName.includes('우익') ||
-    posName.includes('외야')
+    s.includes('좌익') ||
+    s.includes('중견') ||
+    s.includes('우익') ||
+    s.includes('외야') ||
+    s === '7' ||
+    s === '8' ||
+    s === '9'
   ) {
     return 'OUTFIELDER';
   }
-  if (posName.includes('지명') || posName.includes('DH')) return 'DH';
-  return 'INFIELDER';
+  if (s.includes('지명') || s.includes('DH') || s === 'D' || s === '10') return 'DH';
+  return defaultCat;
 }
 
 function getPreviousDateStr(dateStr: string): string {
@@ -98,10 +153,15 @@ function calculateSeasonServiceTime(
   role: LineupRole,
   currentDateStr: string
 ) {
-  // Season starts roughly late March (~2024-03-23). End is roughly late Sept (~180 calendar days total)
-  const seasonStart = new Date('2024-03-23').getTime();
-  const current = new Date(currentDateStr).getTime();
-  const dayIndex = Math.max(1, Math.min(180, Math.floor((current - seasonStart) / (1000 * 60 * 60 * 24))));
+  // Dynamically calculate season progress using target year
+  const targetYear = parseInt(currentDateStr.slice(0, 4), 10) || 2026;
+  // Opening day is usually 4th Saturday of March (~March 23).
+  const seasonStart = new Date(`${targetYear}-03-23T00:00:00+09:00`).getTime();
+  const current = new Date(`${currentDateStr}T00:00:00+09:00`).getTime();
+  const elapsedCalendarDays = Math.floor((current - seasonStart) / (1000 * 60 * 60 * 24));
+  
+  // Day index clamped between 1 and 180 (standard KBO ~180 regular season calendar span)
+  const dayIndex = elapsedCalendarDays < 0 ? 1 : Math.max(1, Math.min(180, elapsedCalendarDays + 1));
 
   // Deterministic seed from pcode
   let seed = 0;
@@ -109,7 +169,7 @@ function calculateSeasonServiceTime(
     seed = (seed * 31 + pcode.charCodeAt(i)) % 1000;
   }
 
-  // Regular starters have ~90-98% attendance, bench ~60-80%, cup-of-coffee ~20-40%
+  // Regular starters have ~88-99% attendance, bench ~50-84%
   let activeRate = 0.85;
   if (role === 'STARTER') {
     activeRate = 0.88 + (seed % 12) / 100; // 0.88 ~ 0.99
@@ -119,10 +179,7 @@ function calculateSeasonServiceTime(
     activeRate = 0.50 + (seed % 35) / 100; // 0.50 ~ 0.84
   }
 
-  // In early season, dayIndex is small, but let's project both current cumulative & full season projected
-  // For the purpose of FA service time evaluation, if date is in May (~55 days in), cumulative is ~45 days.
-  // To allow users to see both full-season FA eligibility and current pace, we estimate cumulative 1st team days:
-  const daysActive1stTeam = Math.max(1, Math.min(180, Math.round(dayIndex * activeRate)));
+  const daysActive1stTeam = Math.max(1, Math.min(dayIndex, Math.round(dayIndex * activeRate)));
   const gamesPlayed = Math.max(0, Math.round(daysActive1stTeam * (role === 'STARTER' ? 0.95 : 0.65)));
   const gamesStarted = role === 'STARTER' ? Math.round(gamesPlayed * 0.9) : Math.round(gamesPlayed * 0.15);
   const gamesSubbed = Math.max(0, gamesPlayed - gamesStarted);
@@ -166,7 +223,12 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
   // 1. Fetch current date games
   const currentSchedUrl = `https://api-gw.sports.naver.com/schedule/games?fields=basic,superCategory,category,round,status,stadium,startTime,title,homeTeam,awayTeam,winner,result,broadcasts,gameStatus,tickets,hasVideo,hasArticle,roundCode,periodCode,aggregateRecord&upperCategoryId=kbaseball&fromDate=${dateStr}&toDate=${dateStr}`;
   const currentSched = await fetchJsonWithCache(currentSchedUrl);
-  const currentGames = currentSched?.result?.games || [];
+  const rawCurrentGames = currentSched?.result?.games || [];
+
+  // Filter out broadcast placeholders without valid home/away teams
+  const currentGames = rawCurrentGames.filter(
+    (g: any) => Boolean(g.homeTeamName || g.homeTeamCode) && Boolean(g.awayTeamName || g.awayTeamCode)
+  );
 
   // 2. Fetch previous date games for transaction diff (IN / OUT)
   const prevDateStr = getPreviousDateStr(dateStr);
@@ -174,13 +236,20 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
   try {
     const prevSchedUrl = `https://api-gw.sports.naver.com/schedule/games?fields=basic,superCategory,category,round,status,stadium,startTime,title,homeTeam,awayTeam,winner,result,broadcasts,gameStatus,tickets,hasVideo,hasArticle,roundCode,periodCode,aggregateRecord&upperCategoryId=kbaseball&fromDate=${prevDateStr}&toDate=${prevDateStr}`;
     const prevSched = await fetchJsonWithCache(prevSchedUrl);
-    prevGames = prevSched?.result?.games || [];
+    const rawPrev = prevSched?.result?.games || [];
+    prevGames = rawPrev.filter(
+      (g: any) => Boolean(g.homeTeamName || g.homeTeamCode) && Boolean(g.awayTeamName || g.awayTeamCode)
+    );
   } catch (err) {
     console.warn('Could not fetch previous schedule for diff:', err);
   }
 
-  // Pre-fetch previous day active rosters
-  const prevRostersByTeam = new Map<string, Map<string, { name: string; position: string; pcode: string; backnum?: string }>>();
+  // Pre-fetch previous day active rosters (keyed by canonical team code)
+  const prevRostersByTeam = new Map<
+    string,
+    Map<string, { name: string; position: string; pcode: string; backnum?: string; hitType?: string }>
+  >();
+
   for (const pg of prevGames) {
     const gid = pg.gameId;
     try {
@@ -188,26 +257,90 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
       const tr = relay?.result?.textRelayData;
       if (!tr) continue;
 
-      const htName = pg.homeTeamName || pg.homeTeamCode;
-      const atName = pg.awayTeamName || pg.awayTeamCode;
+      const htMeta = resolveTeam(pg.homeTeamCode || pg.homeTeamName);
+      const atMeta = resolveTeam(pg.awayTeamCode || pg.awayTeamName);
 
-      if (!prevRostersByTeam.has(htName)) prevRostersByTeam.set(htName, new Map());
-      if (!prevRostersByTeam.has(atName)) prevRostersByTeam.set(atName, new Map());
+      if (!prevRostersByTeam.has(htMeta.code)) prevRostersByTeam.set(htMeta.code, new Map());
+      if (!prevRostersByTeam.has(atMeta.code)) prevRostersByTeam.set(atMeta.code, new Map());
 
-      const homeMap = prevRostersByTeam.get(htName)!;
-      const awayMap = prevRostersByTeam.get(atName)!;
+      const homeMap = prevRostersByTeam.get(htMeta.code)!;
+      const awayMap = prevRostersByTeam.get(atMeta.code)!;
 
       // Fill home
-      (tr.homeLineup?.batter || []).forEach((b: any) => homeMap.set(b.pcode || b.name, { name: b.name, position: b.posName || '타자', pcode: b.pcode, backnum: b.backnum }));
-      (tr.homeLineup?.pitcher || []).forEach((p: any) => homeMap.set(p.pcode || p.name, { name: p.name, position: '투수', pcode: p.pcode, backnum: p.backnum }));
-      (tr.homeEntry?.batter || []).forEach((b: any) => homeMap.set(b.pcode || b.name, { name: b.name, position: b.posName || '외야수', pcode: b.pcode, backnum: b.backnum }));
-      (tr.homeEntry?.pitcher || []).forEach((p: any) => homeMap.set(p.pcode || p.name, { name: p.name, position: '투수', pcode: p.pcode, backnum: p.backnum }));
+      (tr.homeLineup?.batter || []).forEach((b: any) =>
+        homeMap.set(b.pcode || b.name, {
+          name: b.name,
+          position: b.posName || (b.pos ? String(b.pos) : '타자'),
+          pcode: b.pcode,
+          backnum: b.backnum,
+          hitType: b.hitType || b.hittype || '우투우타',
+        })
+      );
+      (tr.homeLineup?.pitcher || []).forEach((p: any) =>
+        homeMap.set(p.pcode || p.name, {
+          name: p.name,
+          position: '투수',
+          pcode: p.pcode,
+          backnum: p.backnum,
+          hitType: p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타'),
+        })
+      );
+      (tr.homeEntry?.batter || []).forEach((b: any) =>
+        homeMap.set(b.pcode || b.name, {
+          name: b.name,
+          position: b.posName || b.pos || '야수',
+          pcode: b.pcode,
+          backnum: b.backnum,
+          hitType: b.hitType || b.hittype || '우투우타',
+        })
+      );
+      (tr.homeEntry?.pitcher || []).forEach((p: any) =>
+        homeMap.set(p.pcode || p.name, {
+          name: p.name,
+          position: '투수',
+          pcode: p.pcode,
+          backnum: p.backnum,
+          hitType: p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타'),
+        })
+      );
 
       // Fill away
-      (tr.awayLineup?.batter || []).forEach((b: any) => awayMap.set(b.pcode || b.name, { name: b.name, position: b.posName || '타자', pcode: b.pcode, backnum: b.backnum }));
-      (tr.awayLineup?.pitcher || []).forEach((p: any) => awayMap.set(p.pcode || p.name, { name: p.name, position: '투수', pcode: p.pcode, backnum: p.backnum }));
-      (tr.awayEntry?.batter || []).forEach((b: any) => awayMap.set(b.pcode || b.name, { name: b.name, position: b.posName || '외야수', pcode: b.pcode, backnum: b.backnum }));
-      (tr.awayEntry?.pitcher || []).forEach((p: any) => awayMap.set(p.pcode || p.name, { name: p.name, position: '투수', pcode: p.pcode, backnum: p.backnum }));
+      (tr.awayLineup?.batter || []).forEach((b: any) =>
+        awayMap.set(b.pcode || b.name, {
+          name: b.name,
+          position: b.posName || (b.pos ? String(b.pos) : '타자'),
+          pcode: b.pcode,
+          backnum: b.backnum,
+          hitType: b.hitType || b.hittype || '우투우타',
+        })
+      );
+      (tr.awayLineup?.pitcher || []).forEach((p: any) =>
+        awayMap.set(p.pcode || p.name, {
+          name: p.name,
+          position: '투수',
+          pcode: p.pcode,
+          backnum: p.backnum,
+          hitType: p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타'),
+        })
+      );
+      (tr.awayEntry?.batter || []).forEach((b: any) =>
+        awayMap.set(b.pcode || b.name, {
+          name: b.name,
+          position: b.posName || b.pos || '야수',
+          pcode: b.pcode,
+          backnum: b.backnum,
+          hitType: b.hitType || b.hittype || '우투우타',
+        })
+      );
+      (tr.awayEntry?.pitcher || []).forEach((p: any) =>
+        awayMap.set(p.pcode || p.name, {
+          name: p.name,
+          position: '투수',
+          pcode: p.pcode,
+          backnum: p.backnum,
+          hitType: p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타'),
+        })
+      );
     } catch (e) {
       // ignore
     }
@@ -232,23 +365,18 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
     if (!tr) continue;
 
     const processTeam = (
-      teamCode: string,
-      teamName: string,
+      rawTeamCode: string,
+      rawTeamName: string,
       lineup: any,
       entry: any,
       isHome: boolean
     ) => {
-      const teamMeta = KBO_TEAMS[teamCode] || KBO_TEAMS[teamName] || {
-        name: teamName,
-        fullName: teamName,
-        color: '#334155',
-        subColor: '#64748B',
-      };
-
+      const teamMeta = resolveTeam(rawTeamCode || rawTeamName);
       const teamKey = teamMeta.name;
+
       if (!teamsSummaryMap.has(teamKey)) {
         teamsSummaryMap.set(teamKey, {
-          teamCode,
+          teamCode: teamMeta.code,
           teamName: teamMeta.name,
           teamColor: teamMeta.color,
           teamEmblemUrl: isHome ? g.homeTeamEmblemUrl : g.awayTeamEmblemUrl,
@@ -263,7 +391,7 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
         });
       }
       const teamSummary = teamsSummaryMap.get(teamKey)!;
-      const prevRoster = prevRostersByTeam.get(teamName) || prevRostersByTeam.get(teamMeta.name);
+      const prevRoster = prevRostersByTeam.get(teamMeta.code);
 
       const currentTeamPcodes = new Set<string>();
 
@@ -278,21 +406,23 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
         const isNewInToday = prevRoster && !prevRoster.has(pcode) && !prevRoster.has(b.name);
         const transaction: TransactionStatus = isNewInToday ? 'IN' : 'STABLE';
         const service = calculateSeasonServiceTime(pcode, b.name, role, dateStr);
+        const hitType = b.hitType || b.hittype || '우투우타';
+        const posName = b.posName || (b.pos ? String(b.pos) : undefined);
 
         const item: PlayerRosterItem = {
           id: pcode,
           name: b.name,
-          teamCode,
+          teamCode: teamMeta.code,
           teamName: teamMeta.name,
           backnum: b.backnum ? String(b.backnum) : undefined,
-          position: b.posName || (isStarter ? `${b.batOrder}번타자` : '교체타자'),
-          posCategory: mapPosCategory(b.posName),
-          hitType: b.hitType,
+          position: posName || (isStarter ? `${b.batOrder}번타자` : '교체타자'),
+          posCategory: mapPosCategory(posName, 'INFIELDER'),
+          hitType,
           birth: b.birth,
           role,
           roleDetail: isStarter
-            ? `${b.batOrder}번 타자 (선발 ${b.posName || '외야'})`
-            : `교체 출장 (${b.posName || '대타/대수비'})`,
+            ? `${b.batOrder}번 타자 (선발 ${posName || '외야'})`
+            : `교체 출장 (${posName || '대타/대수비'})`,
           batOrder: b.batOrder,
           seqno: b.seqno,
           cin: b.cin,
@@ -334,16 +464,18 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
         const isNewInToday = prevRoster && !prevRoster.has(pcode) && !prevRoster.has(p.name);
         const transaction: TransactionStatus = isNewInToday ? 'IN' : 'STABLE';
         const service = calculateSeasonServiceTime(pcode, p.name, role, dateStr);
+        const hitType =
+          p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타');
 
         const item: PlayerRosterItem = {
           id: pcode,
           name: p.name,
-          teamCode,
+          teamCode: teamMeta.code,
           teamName: teamMeta.name,
           backnum: p.backnum ? String(p.backnum) : undefined,
           position: isStarter ? '선발투수' : '구원투수',
           posCategory: 'PITCHER',
-          hitType: p.hitType,
+          hitType,
           birth: p.birth,
           role,
           roleDetail: isStarter ? '선발 투수 (선발 등판)' : `구원 등판 (${p.inn || '0'}이닝)`,
@@ -382,15 +514,21 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
         const isNewInToday = prevRoster && !prevRoster.has(pcode) && !prevRoster.has(b.name);
         const transaction: TransactionStatus = isNewInToday ? 'IN' : 'STABLE';
         const service = calculateSeasonServiceTime(pcode, b.name, 'BENCH', dateStr);
+        const posName = b.posName || b.pos || '야수(후보)';
+        const hitType = b.hitType || b.hittype || '우투우타';
+        const prevData = prevRoster?.get(pcode) || prevRoster?.get(b.name);
+        const backnum = b.backnum || prevData?.backnum;
 
         const item: PlayerRosterItem = {
           id: pcode,
           name: b.name,
-          teamCode,
+          teamCode: teamMeta.code,
           teamName: teamMeta.name,
-          backnum: b.backnum ? String(b.backnum) : undefined,
-          position: b.posName || '야수(후보)',
-          posCategory: mapPosCategory(b.posName),
+          backnum: backnum ? String(backnum) : undefined,
+          position: posName,
+          posCategory: mapPosCategory(posName, 'INFIELDER'),
+          hitType,
+          birth: b.birth,
           role: 'BENCH',
           roleDetail: '1군 벤치 대기 (미출장 후보)',
           transaction,
@@ -419,15 +557,21 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
         const isNewInToday = prevRoster && !prevRoster.has(pcode) && !prevRoster.has(p.name);
         const transaction: TransactionStatus = isNewInToday ? 'IN' : 'STABLE';
         const service = calculateSeasonServiceTime(pcode, p.name, 'BENCH', dateStr);
+        const hitType =
+          p.hitType || p.hittype || (p.pitchingStyle?.includes('좌') ? '좌투좌타' : '우투우타');
+        const prevData = prevRoster?.get(pcode) || prevRoster?.get(p.name);
+        const backnum = p.backnum || prevData?.backnum;
 
         const item: PlayerRosterItem = {
           id: pcode,
           name: p.name,
-          teamCode,
+          teamCode: teamMeta.code,
           teamName: teamMeta.name,
-          backnum: p.backnum ? String(p.backnum) : undefined,
+          backnum: backnum ? String(backnum) : undefined,
           position: '투수',
           posCategory: 'PITCHER',
+          hitType,
+          birth: p.birth,
           role: 'BENCH',
           roleDetail: '1군 불펜 대기 (미등판)',
           transaction,
@@ -456,11 +600,12 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
             const deregisteredItem: PlayerRosterItem = {
               id: prevPlayer.pcode || prevCode,
               name: prevPlayer.name,
-              teamCode,
+              teamCode: teamMeta.code,
               teamName: teamMeta.name,
               backnum: prevPlayer.backnum ? String(prevPlayer.backnum) : undefined,
               position: prevPlayer.position || '선수',
-              posCategory: mapPosCategory(prevPlayer.position),
+              posCategory: mapPosCategory(prevPlayer.position, 'PITCHER'),
+              hitType: prevPlayer.hitType || '우투우타',
               role: 'BENCH',
               roleDetail: '1군 말소 (2군/부상자 명단 이동)',
               transaction: 'OUT',
@@ -485,7 +630,7 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
 
   // Filter by team if requested
   const filteredPlayers = filterTeam && filterTeam !== 'ALL'
-    ? allPlayers.filter((p) => p.teamName === filterTeam || p.teamCode === filterTeam)
+    ? allPlayers.filter((p) => isMatchingTeam(p.teamName, p.teamCode, filterTeam))
     : allPlayers;
 
   const totalStarters = filteredPlayers.filter((p) => p.role === 'STARTER').length;
@@ -500,6 +645,7 @@ export async function fetchDayRosterData(dateStr: string, filterTeam?: string): 
     gamesCount: currentGames.length,
     teams: Array.from(teamsSummaryMap.values()),
     players: filteredPlayers,
+    allPlayers,
     transactions: {
       registered: registeredTransactions,
       deregistered: deregisteredTransactions,

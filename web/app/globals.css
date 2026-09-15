@@ -42,34 +42,34 @@ table {
 }
 
 :root {
-  --background: #f2f4f6;
-  --foreground: #191f28;
-  --primary: #3182f6;
-  --primary-hover: #1b64da;
-  --primary-soft: #e8f3ff;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-soft: rgba(59, 130, 246, 0.15);
   
-  --ink-primary: #191f28;
-  --ink-secondary: #333d4b;
-  --ink-tertiary: #4e5968;
-  --ink-muted: #8b95a1;
-  --ink-faint: #b0b8c1;
+  --ink-primary: #f8fafc;
+  --ink-secondary: #e2e8f0;
+  --ink-tertiary: #94a3b8;
+  --ink-muted: #64748b;
+  --ink-faint: #475569;
   
-  --canvas: #f2f4f6;
-  --surface: #ffffff;
-  --surface-hover: #fafbfc;
-  --surface-muted: #f9fafb;
+  --canvas: #020617;
+  --surface: #0f172a;
+  --surface-hover: #1e293b;
+  --surface-muted: #1e293b;
   
-  --border-light: #e5e8eb;
-  --border-medium: #d1d6db;
+  --border-light: #1e293b;
+  --border-medium: #334155;
   
-  --bull-red: #f04452;
-  --bull-red-soft: #feebee;
+  --bull-red: #f43f5e;
+  --bull-red-soft: rgba(244, 63, 94, 0.15);
   
-  --bear-blue: #3182f6;
-  --bear-blue-soft: #e8f3ff;
+  --bear-blue: #38bdf8;
+  --bear-blue-soft: rgba(56, 189, 248, 0.15);
   
-  --warning-yellow: #ffad12;
-  --warning-yellow-soft: #fff7e6;
+  --warning-yellow: #f59e0b;
+  --warning-yellow-soft: rgba(245, 158, 11, 0.15);
 }
 
 body {
@@ -81,12 +81,12 @@ body {
   min-height: 100vh;
 }
 
-/* Toss-style spacious cards */
+/* Toss-style spacious cards adapted to dark baseball stadium theme */
 .glass-panel {
   background-color: var(--surface);
   border: 1px solid var(--border-light);
   border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -104,11 +104,11 @@ body {
   background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.24);
 }
 
 button {
@@ -127,8 +127,9 @@ a {
 /* Custom form inputs styling */
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  opacity: 0.5;
+  filter: invert(0.8);
+  opacity: 0.7;
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 0.8;
+  opacity: 1;
 }

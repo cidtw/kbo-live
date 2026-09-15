@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PlayerRosterItem, TeamRosterSummary } from '@/types/roster-fa';
+import { isMatchingTeam } from '@/lib/roster-fa-service';
 import {
   Trophy,
   Award,
@@ -37,10 +38,10 @@ export const FaLeaderboard: React.FC<FaLeaderboardProps> = ({
   // 3. Team FA Statistics
   const teamFaStats = teams.map((t) => {
     const qualified = players.filter(
-      (p) => (p.teamName === t.teamName || p.teamCode === t.teamCode) && p.faEligible
+      (p) => isMatchingTeam(p.teamName, p.teamCode, t.teamCode) && p.faEligible
     ).length;
     const total = players.filter(
-      (p) => (p.teamName === t.teamName || p.teamCode === t.teamCode)
+      (p) => isMatchingTeam(p.teamName, p.teamCode, t.teamCode)
     ).length || 1;
     const rate = Math.round((qualified / total) * 100);
     return {

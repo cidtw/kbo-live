@@ -51,7 +51,7 @@ export const PlayerDetailModal: React.FC<PlayerDetailModalProps> = ({ player, on
               <div className="text-xs text-slate-400 mt-1 flex items-center gap-3">
                 <span>배번: #{player.backnum || '-'}</span>
                 <span>•</span>
-                <span>{player.hitType || '투타미상'}</span>
+                <span>{player.hitType || '우투우타'}</span>
                 <span>•</span>
                 <span>고유코드: {player.id}</span>
               </div>

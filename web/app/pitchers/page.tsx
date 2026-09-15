@@ -7,6 +7,7 @@ import OverworkTable from '@/components/pitchers/OverworkTable';
 import PitcherDrawer from '@/components/pitchers/PitcherDrawer';
 import ExportButtons from '@/components/pitchers/ExportButtons';
 import { OverworkDatasetResponse, PitcherOverworkData } from '@/lib/domain/types';
+import { isMatchingTeam } from '@/lib/roster-fa-service';
 
 export default function PitcherOverworkPage() {
   const [dataset, setDataset] = useState<OverworkDatasetResponse | null>(null);
@@ -54,7 +55,7 @@ export default function PitcherOverworkPage() {
 
     return dataset.pitchers.filter((p) => {
       // 1. 구단 필터
-      if (selectedTeam && p.team !== selectedTeam) {
+      if (selectedTeam && !isMatchingTeam(p.teamName, p.team, selectedTeam)) {
         return false;
       }
       // 2. 보직 필터

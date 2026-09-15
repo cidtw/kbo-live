@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { PlayerRosterItem, TeamRosterSummary } from '@/types/roster-fa';
+import { isMatchingTeam } from '@/lib/roster-fa-service';
 import {
   Users,
   ShieldAlert,
@@ -27,11 +28,14 @@ export const LineupBoard: React.FC<LineupBoardProps> = ({
   onSelectTeam,
   onSelectPlayer,
 }) => {
-  // If selectedTeam is 'ALL', pick the first team or let user choose
-  const activeTeamName = selectedTeam === 'ALL' && teams.length > 0 ? teams[0].teamName : selectedTeam;
+  // If selectedTeam is 'ALL' or not present in teams on this date, pick the first team
+  const hasSelectedTeam = teams.some((t) => isMatchingTeam(t.teamName, t.teamCode, selectedTeam));
+  const activeTeamName = (selectedTeam === 'ALL' || !hasSelectedTeam) && teams.length > 0
+    ? teams[0].teamName
+    : selectedTeam;
 
-  const teamPlayers = players.filter(
-    (p) => p.teamName === activeTeamName || p.teamCode === activeTeamName
+  const teamPlayers = players.filter((p) =>
+    isMatchingTeam(p.teamName, p.teamCode, activeTeamName)
   );
 
   const starters = teamPlayers
@@ -52,16 +56,16 @@ export const LineupBoard: React.FC<LineupBoardProps> = ({
   const deregistered = teamPlayers.filter((p) => p.transaction === 'OUT');
   const newlyRegistered = teamPlayers.filter((p) => p.transaction === 'IN');
 
-  const currentTeamSummary = teams.find(
-    (t) => t.teamName === activeTeamName || t.teamCode === activeTeamName
-  );
+  const currentTeamSummary = teams.find((t) =>
+    isMatchingTeam(t.teamName, t.teamCode, activeTeamName)
+  ) || (teams.length > 0 ? teams[0] : null);
 
   return (
     <div className="space-y-5">
       {/* Team Tabs Selector */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
         {teams.map((t) => {
-          const isSelected = activeTeamName === t.teamName;
+          const isSelected = isMatchingTeam(t.teamName, t.teamCode, activeTeamName);
           return (
             <button
               key={t.teamCode}
