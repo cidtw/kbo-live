@@ -3,9 +3,15 @@
 const GW = 'https://api-gw.sports.naver.com';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) kbo-live/0.1 (unofficial fan project)';
 
+import {
+  enhancePlayerInformation,
+  PlayerCategory,
+} from './foreignPlayerEnhancer';
+
 export interface PlayerProfile {
   playerId: string;
   name: string;
+  englishName?: string;
   imageUrl: string;
   teamCode: string;
   teamName: string;
@@ -24,6 +30,18 @@ export interface PlayerProfile {
   salary?: string;           // 연봉 (예: "3000만원")
   schools: string[];         // 출신 학교 목록 (예: ["강릉영동대", "강릉고", "경포중", "노암초"])
   prizes: { year: string; contents: string }[]; // 주요 수상 내역
+
+  // 외국인 및 아시아쿼터(대체 외인 포함) 고도화 메타데이터
+  playerCategory?: PlayerCategory;
+  categoryLabel?: string;
+  nationality?: string;
+  nationalityFlag?: string;
+  kboDebutYear?: string;
+  kboDebutTeam?: string;
+  kboDraftType?: string;
+  proDebutYear?: string;
+  proDebutTeam?: string;
+  rawCareer?: string;
 }
 
 export interface SeasonRecord {
@@ -162,6 +180,7 @@ export async function fetchKboOfficialProfile(playerId: string): Promise<{
   joinInfoRaw: string;
   payment: string;
   salary: string;
+  careerRaw?: string;
 } | null> {
   const urls = [
     `https://www.koreabaseball.com/Record/Player/PitcherDetail/Basic.aspx?playerId=${playerId}`,
@@ -245,6 +264,7 @@ export async function fetchKboOfficialProfile(playerId: string): Promise<{
         joinInfoRaw: rawJoin,
         payment,
         salary,
+        careerRaw: rawCareer,
       };
     } catch (_) {
       // 다음 URL 시도
@@ -361,6 +381,31 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     }
   }
 
+  // 3. 외국인 및 아시아쿼터/국내 선수 프로 데뷔 및 출신교명 고도화 엔진 적용
+  const enhanced = enhancePlayerInformation(playerId, pRaw, rRaw, {
+    career: kboOfficial?.careerRaw || '',
+    draft: kboOfficial?.draftInfo || '',
+    entryYear: kboOfficial?.joinInfoRaw || '',
+    salary: kboOfficial?.salary || '',
+    payment: kboOfficial?.payment || '',
+  });
+
+  // 외국인/아시아쿼터 선수의 경우 고도화된 학교 목록 및 데뷔 정보 우선 적용
+  let finalSchools = schools;
+  if (enhanced.playerCategory !== 'DOMESTIC' && enhanced.schools.length > 0) {
+    finalSchools = enhanced.schools;
+  } else if (finalSchools.length === 0 && enhanced.schools.length > 0) {
+    finalSchools = enhanced.schools;
+  }
+
+  // 데뷔 정보 결합
+  let finalDebutYear = debutYear;
+  let finalDebutTeam = debutTeam;
+  if (enhanced.playerCategory !== 'DOMESTIC') {
+    finalDebutYear = enhanced.kboDebutYear || debutYear;
+    finalDebutTeam = enhanced.kboDebutTeam || debutTeam;
+  }
+
   const prizes: { year: string; contents: string }[] = [];
   if (Array.isArray(pRaw?.sportsBridgePrizeInfo)) {
     pRaw.sportsBridgePrizeInfo.forEach((pr: any) => {
@@ -372,11 +417,12 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
   const profile: PlayerProfile = {
     playerId,
     name: pRaw?.name || kboOfficial?.joinTeam || 'KBO 선수',
+    englishName: enhanced.englishName,
     imageUrl:
       pRaw?.profileImage ||
       'https://ssl.pstatic.net/static.sports/resources/sports-web/player-end/static/media/default_player.svg',
     teamCode: teamInfo.teamCode || rRaw?.teamCode || '',
-    teamName: teamInfo.teamOriginalName || teamInfo.teamName || debutTeam || 'KBO',
+    teamName: teamInfo.teamOriginalName || teamInfo.teamName || finalDebutTeam || 'KBO',
     backNumber: teamInfo.teamPlayerNumber || '',
     position: teamInfo.teamPosition || (rRaw?.playerType === 'pitcher' ? '투수' : '타자'),
     playerDescription: rRaw?.playerDescription || (rRaw?.playerType === 'pitcher' ? '투수' : '타자'),
@@ -385,13 +431,25 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     age: pRaw?.age || '',
     height: pRaw?.bodyHeight ? `${pRaw.bodyHeight}cm` : '',
     weight: pRaw?.bodyWeight ? `${pRaw.bodyWeight}kg` : '',
-    debutYear: debutYear || '',
-    debutTeam: debutTeam || '',
-    draftInfo: draftInfo || '',
+    debutYear: finalDebutYear || '',
+    debutTeam: finalDebutTeam || '',
+    draftInfo: enhanced.kboDraftType || draftInfo || '',
     payment: kboOfficial?.payment || '',
     salary: kboOfficial?.salary || '',
-    schools,
+    schools: finalSchools,
     prizes,
+
+    // 외국인/아시아쿼터 특화 고도화 필드
+    playerCategory: enhanced.playerCategory,
+    categoryLabel: enhanced.categoryLabel,
+    nationality: enhanced.nationality,
+    nationalityFlag: enhanced.nationalityFlag,
+    kboDebutYear: enhanced.kboDebutYear,
+    kboDebutTeam: enhanced.kboDebutTeam,
+    kboDraftType: enhanced.kboDraftType,
+    proDebutYear: enhanced.proDebutYear,
+    proDebutTeam: enhanced.proDebutTeam,
+    rawCareer: kboOfficial?.careerRaw || '',
   };
 
   // 3. 기록 정규화 (시즌별, 일자별, 상대팀별)

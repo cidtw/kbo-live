@@ -57,70 +57,140 @@ export default function PlayerProfileHero({ profile }: PlayerProfileHeroProps) {
             <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700/80">
               {profile.playerDescription || profile.position}
             </span>
-            {profile.draftInfo && (
-              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/70">
-                🎯 {profile.draftInfo}
+
+            {/* 선수 구분 뱃지 (외국인 / 아시아쿼터 / 국내) */}
+            {profile.playerCategory === 'ASIAN_QUOTA' && (
+              <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1 shadow-sm">
+                <span>{profile.nationalityFlag || '🇯🇵'}</span>
+                <span>{profile.nationality || '일본'}</span>
+                <span className="text-emerald-400 font-normal">| {profile.categoryLabel || '아시아쿼터'}</span>
+              </span>
+            )}
+            {profile.playerCategory === 'FOREIGN' && (
+              <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-purple-950 text-purple-300 border border-purple-700 flex items-center gap-1 shadow-sm">
+                <span>{profile.nationalityFlag || '🌐'}</span>
+                <span>{profile.nationality || '외국인'}</span>
+                <span className="text-purple-400 font-normal">| {profile.categoryLabel || '외국인 선수'}</span>
+              </span>
+            )}
+
+            {profile.kboDraftType && (
+              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-800/70">
+                🎯 {profile.kboDraftType}
               </span>
             )}
           </div>
 
-          <div>
+          <div className="flex items-baseline gap-2.5 flex-wrap justify-center md:justify-start">
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
               {profile.name}
             </h1>
+            {profile.englishName && profile.englishName !== profile.name && (
+              <span className="text-base md:text-lg text-slate-400 font-normal tracking-wide font-mono">
+                {profile.englishName}
+              </span>
+            )}
           </div>
 
-          {/* 세부 인적사항 그리드 */}
+          {/* 세부 인적사항 그리드 (외국인/아시아쿼터 특화 분기) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-              <span className="text-slate-400 block text-[11px] mb-0.5">생년월일 / 나이</span>
-              <span className="text-slate-200 font-medium">
+              <span className="text-slate-400 block text-[11px] mb-0.5">
+                {profile.playerCategory !== 'DOMESTIC' ? '생년월일 · 국적' : '생년월일 / 나이'}
+              </span>
+              <span className="text-slate-200 font-medium block">
                 {profile.birthDateKor || profile.birthDate || '-'}
                 {profile.age && <span className="text-slate-400 ml-1">({profile.age})</span>}
               </span>
-            </div>
-
-            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-              <span className="text-slate-400 block text-[11px] mb-0.5">체격 / 신체</span>
-              <span className="text-slate-200 font-medium">
-                {profile.height && profile.weight
-                  ? `${profile.height} / ${profile.weight}`
-                  : profile.height || profile.weight || '-'}
-              </span>
-            </div>
-
-            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-              <span className="text-slate-400 block text-[11px] mb-0.5">프로 입단 (KBO)</span>
-              <span className="text-slate-200 font-medium block">
-                {profile.debutYear ? `${profile.debutYear}년` : ''} {profile.debutTeam || '-'}
-              </span>
-              {profile.payment && (
-                <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                  계약금 {profile.payment}
+              {profile.nationality && (
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  {profile.nationalityFlag} {profile.nationality}
                 </span>
               )}
             </div>
 
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-              <span className="text-slate-400 block text-[11px] mb-0.5">출신 학교</span>
-              <div className="flex flex-wrap gap-1 mt-0.5">
-                {sortedSchools.map((s, idx) => {
-                  const isUniv = s.includes('대') || s.includes('대학');
-                  return (
-                    <span
-                      key={idx}
-                      className={`px-1.5 py-0.5 rounded text-[11px] ${
-                        isUniv
-                          ? 'bg-blue-900/60 text-blue-200 font-bold border border-blue-700/60'
-                          : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      {s}
-                    </span>
-                  );
-                })}
-                {sortedSchools.length === 0 && <span className="text-slate-500">-</span>}
-              </div>
+              <span className="text-slate-400 block text-[11px] mb-0.5">체격 · 계약조건</span>
+              <span className="text-slate-200 font-medium block">
+                {profile.height && profile.weight
+                  ? `${profile.height} / ${profile.weight}`
+                  : profile.height || profile.weight || '-'}
+              </span>
+              {(profile.salary || profile.payment) && (
+                <span className="text-[11px] text-amber-300/90 block mt-0.5 font-mono truncate">
+                  {profile.salary ? `연봉 ${profile.salary}` : ''}
+                  {profile.payment ? ` (계약금 ${profile.payment})` : ''}
+                </span>
+              )}
+            </div>
+
+            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+              <span className="text-slate-400 block text-[11px] mb-0.5">
+                {profile.playerCategory !== 'DOMESTIC' ? 'KBO 리그 입단' : '프로 입단'}
+              </span>
+              <span className="text-slate-200 font-medium block">
+                {profile.kboDebutYear ? `${profile.kboDebutYear}년` : (profile.debutYear ? `${profile.debutYear}년` : '')}{' '}
+                {profile.kboDebutTeam || profile.debutTeam || '-'}
+              </span>
+              {profile.draftInfo && (
+                <span className="text-[10px] text-slate-400 block mt-0.5 truncate" title={profile.draftInfo}>
+                  {profile.draftInfo}
+                </span>
+              )}
+            </div>
+
+            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+              <span className="text-slate-400 block text-[11px] mb-0.5">
+                {profile.playerCategory !== 'DOMESTIC' ? '프로 · 해외 데뷔' : '입단 계약'}
+              </span>
+              {profile.playerCategory !== 'DOMESTIC' ? (
+                <>
+                  <span className="text-slate-200 font-medium block truncate" title={profile.proDebutTeam}>
+                    {profile.proDebutYear ? `${profile.proDebutYear}년 ` : ''}
+                    {profile.proDebutTeam || '-'}
+                  </span>
+                  <span className="text-[10px] text-indigo-300 block mt-0.5">해외/메이저 공식 데뷔</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-200 font-medium block">
+                    {profile.payment ? `계약금 ${profile.payment}` : (profile.salary ? `연봉 ${profile.salary}` : '-')}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">KBO 공식 등록</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 출신 학교 / 아카데미 카드 (전체 폭) */}
+          <div className="bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/70 text-xs text-left">
+            <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1">
+              <span className="font-semibold text-slate-300">
+                {profile.playerCategory !== 'DOMESTIC' ? '🎓 출신 학교 및 육성 이력' : '🎓 출신 학교'}
+              </span>
+              <span className="text-slate-500 font-mono text-[10px]">
+                ({sortedSchools.length > 0 ? `${sortedSchools.length}개 기관` : '미기재'})
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {sortedSchools.map((s, idx) => {
+                const isUniv = s.includes('대') || s.includes('대학') || s.includes('College') || s.includes('칼리지');
+                return (
+                  <span
+                    key={idx}
+                    className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                      isUniv
+                        ? 'bg-blue-950/80 text-blue-200 border-blue-800/70 font-bold'
+                        : 'bg-slate-800/90 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    {s}
+                  </span>
+                );
+              })}
+              {sortedSchools.length === 0 && (
+                <span className="text-slate-500 text-[11px]">등록된 출신교 정보가 없습니다.</span>
+              )}
             </div>
           </div>
 
