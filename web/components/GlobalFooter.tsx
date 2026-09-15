@@ -91,18 +91,15 @@ export const GlobalFooter: React.FC = () => {
             <Terminal className="w-3.5 h-3.5 text-kbo-gold" />
             <span>빠른 단축키 가이드</span>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight">
+          <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight text-center">
               <strong className="text-kbo-cyan font-mono mr-1">[1]</strong> 실시간 중계
             </span>
-            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight">
+            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight text-center">
               <strong className="text-kbo-cyan font-mono mr-1">[2]</strong> 혹사 지수
             </span>
-            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight">
+            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight text-center">
               <strong className="text-kbo-cyan font-mono mr-1">[3]</strong> 등판 일지
-            </span>
-            <span className="bg-[#051124] px-2 py-1 rounded border border-kbo-borderLight">
-              <strong className="text-kbo-cyan font-mono mr-1">[4]</strong> 라인업·FA
             </span>
           </div>
         </div>

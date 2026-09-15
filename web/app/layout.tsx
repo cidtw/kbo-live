@@ -5,7 +5,7 @@ import { GlobalFooter } from "@/components/GlobalFooter";
 
 export const metadata: Metadata = {
   title: "KBO Live - 실시간 야구 분석 & 세이버메트릭스 랩 [3rd-Party]",
-  description: "KBO 리그 실시간 문자중계, 투수 혹사 지수, 3D PTS 투구 궤적, 라인업 및 145일 FA 서비스타임 독립 서드파티 분석 대시보드",
+  description: "KBO 리그 실시간 문자중계, 투수 혹사 지수, 3D PTS 투구 궤적 독립 서드파티 분석 대시보드",
 };
 
 export default function RootLayout({
