@@ -367,7 +367,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                             <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 text-blue-400 transition" />
                           </div>
                           <div className="text-[11px] text-slate-400">
-                            {p.hitType || '투타미상'} • {p.birth?.slice(0, 4) || '출생연도'}
+                            {p.hitType || '우투우타'} • {p.birth ? `${p.birth.slice(0, 4)}년생` : 'KBO 선수'}
                           </div>
                         </div>
                       </div>

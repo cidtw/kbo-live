@@ -116,6 +116,16 @@ export default function RosterFaPage() {
             {/* Quick date buttons */}
             <div className="hidden md:flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/60 text-xs">
               <button
+                onClick={() => setDate('2026-09-13')}
+                className={`px-2.5 py-1 rounded-md transition font-medium ${
+                  date === '2026-09-13'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                9월 13일 (최근)
+              </button>
+              <button
                 onClick={() => setDate('2024-05-15')}
                 className={`px-2.5 py-1 rounded-md transition font-medium ${
                   date === '2024-05-15'
@@ -123,17 +133,7 @@ export default function RosterFaPage() {
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                5월 15일 (샘플)
-              </button>
-              <button
-                onClick={() => setDate('2024-05-14')}
-                className={`px-2.5 py-1 rounded-md transition font-medium ${
-                  date === '2024-05-14'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                5월 14일
+                2024년 5월 15일 (샘플)
               </button>
             </div>
 
@@ -150,7 +150,7 @@ export default function RosterFaPage() {
 
             {/* Refresh Button */}
             <button
-              onClick={() => fetchData(date, selectedTeam)}
+              onClick={() => fetchData(date)}
               disabled={isLoading}
               title="새로고침"
               className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition disabled:opacity-50"
@@ -171,7 +171,7 @@ export default function RosterFaPage() {
                 {date} KBO 1군 엔트리 & FA 서비스타임 데이터셋
               </h2>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold">
-                정규시즌 공식 기록 연동
+                {selectedTeam === 'ALL' ? '전체 10개 구단' : `${selectedTeam} 구단`}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
@@ -230,7 +230,9 @@ export default function RosterFaPage() {
                 {summary.totalPlayers}
                 <span className="text-xs font-normal text-slate-400 ml-1">명</span>
               </div>
-              <div className="text-[10px] text-slate-500 mt-1">28인 엔트리 기준</div>
+              <div className="text-[10px] text-slate-500 mt-1">
+                {selectedTeam === 'ALL' ? '리그 전체' : `${selectedTeam} 현역`}
+              </div>
             </div>
 
             {/* Card 2: Starters */}
@@ -279,9 +281,9 @@ export default function RosterFaPage() {
                 당일 등록 / 말소
               </div>
               <div className="text-xl font-black text-white mt-1 flex items-center gap-2">
-                <span className="text-green-400">▲{transactions?.registered.length || 0}</span>
+                <span className="text-green-400">▲{teamTransactions.registered.length}</span>
                 <span className="text-slate-600">/</span>
-                <span className="text-rose-400">▼{transactions?.deregistered.length || 0}</span>
+                <span className="text-rose-400">▼{teamTransactions.deregistered.length}</span>
               </div>
               <div className="text-[10px] text-slate-500 mt-1">전일 대비 변동</div>
             </div>
@@ -314,10 +316,10 @@ export default function RosterFaPage() {
                 : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
             }`}
           >
-            전체 구단 ({rosterData?.players.length || 0}명)
+            전체 구단 ({basePlayers.length}명)
           </button>
           {rosterData?.teams.map((t) => {
-            const isSelected = selectedTeam === t.teamName;
+            const isSelected = selectedTeam === t.teamName || selectedTeam === t.teamCode;
             return (
               <button
                 key={t.teamCode}
@@ -346,6 +348,47 @@ export default function RosterFaPage() {
           </div>
         )}
 
+        {/* Empty State: No Games on Date */}
+        {!isLoading && rosterData && basePlayers.length === 0 && (
+          <div className="p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-3">
+            <p className="text-slate-300 font-semibold text-sm">
+              선택하신 일자({date})에는 진행된 KBO 경기 및 등록된 1군 엔트리가 없습니다.
+            </p>
+            <p className="text-xs text-slate-500">
+              월요일 휴식일이거나 비시즌, 또는 당일 경기 시작 전 라인업 미발표 상태일 수 있습니다.
+            </p>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => setDate('2026-09-13')}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition"
+              >
+                최근 경기일(2026-09-13)로 이동
+              </button>
+              <button
+                onClick={() => setDate('2024-05-15')}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+              >
+                2024 샘플 경기일(2024-05-15)로 이동
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State: Selected Team Did Not Play on Date */}
+        {!isLoading && rosterData && basePlayers.length > 0 && filteredPlayers.length === 0 && selectedTeam !== 'ALL' && (
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-2">
+            <p className="text-slate-300 text-xs font-semibold">
+              {selectedTeam} 구단은 {date}에 편성된 정규시즌 경기 일정이 없습니다 (우천취소 또는 해당일 휴식).
+            </p>
+            <button
+              onClick={() => setSelectedTeam('ALL')}
+              className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition"
+            >
+              전체 구단 보기로 전환
+            </button>
+          </div>
+        )}
+
         {/* Loading Spinner */}
         {isLoading && (
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
@@ -361,7 +404,7 @@ export default function RosterFaPage() {
           <div>
             {viewMode === 'TABLE' && (
               <RosterTable
-                players={rosterData.players}
+                players={filteredPlayers}
                 date={date}
                 selectedTeam={selectedTeam}
                 onSelectPlayer={setSelectedPlayer}
@@ -370,7 +413,7 @@ export default function RosterFaPage() {
 
             {viewMode === 'LINEUP' && (
               <LineupBoard
-                players={rosterData.players}
+                players={basePlayers}
                 teams={rosterData.teams}
                 selectedTeam={selectedTeam}
                 onSelectTeam={setSelectedTeam}
@@ -380,7 +423,7 @@ export default function RosterFaPage() {
 
             {viewMode === 'FA_LEADERBOARD' && (
               <FaLeaderboard
-                players={rosterData.players}
+                players={basePlayers}
                 teams={rosterData.teams}
                 onSelectPlayer={setSelectedPlayer}
               />

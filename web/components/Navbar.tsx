@@ -54,28 +54,50 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Navigation Tabs */}
-            <nav className="hidden lg:flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/60">
+            <nav className="hidden lg:flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/60 text-xs">
               <Link
                 href="/roster-fa"
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
                   pathname === '/roster-fa'
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                 }`}
               >
                 <Users className="w-3.5 h-3.5 text-blue-300" />
-                라인업·등록말소 & FA 서비스타임
+                라인업·FA
               </Link>
               <Link
-                href="/"
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  pathname === '/'
+                href="/pitchers"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
+                  pathname === '/pitchers'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5 text-amber-300" />
+                투수 혹사 지수
+              </Link>
+              <Link
+                href="/journal"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
+                  pathname === '/journal'
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                     : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                 }`}
               >
                 <Activity className="w-3.5 h-3.5 text-emerald-300" />
-                투수 일지 & PTS 궤적
+                등판일지 & PTS
+              </Link>
+              <Link
+                href="/"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
+                  pathname === '/'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5 text-blue-400" />
+                실시간 중계
               </Link>
             </nav>
           </div>

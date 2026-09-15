@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { crawlPitcherOverworkDataset } from '@/lib/domain/crawler';
-import { kstDateStr, addDays, mapTeamCode } from '@/lib/domain/util';
+import { kstDateStr, addDays } from '@/lib/domain/util';
+import { isMatchingTeam } from '@/lib/roster-fa-service';
 import { OverworkDatasetResponse } from '@/lib/domain/types';
 
 // 최근 요청 결과 인메모리 캐시 (key: `${from}_${to}`)
@@ -60,8 +61,7 @@ export async function GET(request: Request) {
     // 필터링 적용 (team, role)
     let filteredPitchers = dataset.pitchers;
     if (teamFilter) {
-      const normalizedTeam = mapTeamCode(teamFilter);
-      filteredPitchers = filteredPitchers.filter((p) => p.team === normalizedTeam || p.team === teamFilter);
+      filteredPitchers = filteredPitchers.filter((p) => isMatchingTeam(p.teamName, p.team, teamFilter));
     }
     if (roleFilter) {
       filteredPitchers = filteredPitchers.filter((p) => p.primaryRole === roleFilter);
