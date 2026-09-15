@@ -79,6 +79,13 @@ export default function PlayerProfileHero({ profile }: PlayerProfileHeroProps) {
                 🎯 {profile.kboDraftType}
               </span>
             )}
+
+            {profile.styleArchetype && (
+              <span className="px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-800/70 flex items-center gap-1 shadow-sm">
+                <span>⚡</span>
+                <span>{profile.styleArchetype}</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-baseline gap-2.5 flex-wrap justify-center md:justify-start">

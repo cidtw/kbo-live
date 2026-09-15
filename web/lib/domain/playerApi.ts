@@ -7,6 +7,12 @@ import {
   enhancePlayerInformation,
   PlayerCategory,
 } from './foreignPlayerEnhancer';
+import {
+  analyzePitchingStyle,
+  analyzeBattingStyle,
+  PitchingAnalysisData,
+  BattingAnalysisData,
+} from './pitchingAnalysisEngine';
 
 export interface PlayerProfile {
   playerId: string;
@@ -42,6 +48,8 @@ export interface PlayerProfile {
   proDebutYear?: string;
   proDebutTeam?: string;
   rawCareer?: string;
+  styleArchetype?: string;
+  styleTags?: string[];
 }
 
 export interface SeasonRecord {
@@ -105,6 +113,8 @@ export interface FullPlayerRecordData {
   seasons: SeasonRecord[];
   gameLogs: GameLogRecord[];
   vsTeams: VsTeamRecord[];
+  pitchingAnalysis?: PitchingAnalysisData;
+  battingAnalysis?: BattingAnalysisData;
 }
 
 // 인메모리 캐시 (10분)
@@ -414,6 +424,29 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
   }
 
   const teamInfo = pRaw?.teamInfo?.[0] || {};
+  const isPitcher = (rRaw?.playerType === 'pitcher') || String(teamInfo.teamPosition || '').includes('투수');
+  const chartRaw = rRaw?.chart;
+  const basicRecordRaw = rRaw?.basicRecord;
+
+  let pitchingAnalysis: PitchingAnalysisData | undefined;
+  let battingAnalysis: BattingAnalysisData | undefined;
+
+  if (isPitcher) {
+    pitchingAnalysis = analyzePitchingStyle(
+      chartRaw,
+      basicRecordRaw,
+      rRaw?.playerDescription || teamInfo.teamPosition || '',
+      pRaw?.name || ''
+    ) || undefined;
+  } else {
+    battingAnalysis = analyzeBattingStyle(
+      chartRaw,
+      basicRecordRaw,
+      rRaw?.playerDescription || teamInfo.teamPosition || '',
+      pRaw?.name || ''
+    ) || undefined;
+  }
+
   const profile: PlayerProfile = {
     playerId,
     name: pRaw?.name || kboOfficial?.joinTeam || 'KBO 선수',
@@ -450,6 +483,10 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     proDebutYear: enhanced.proDebutYear,
     proDebutTeam: enhanced.proDebutTeam,
     rawCareer: kboOfficial?.careerRaw || '',
+
+    // 구종 데이터 기반 스타일 요약 메타데이터
+    styleArchetype: pitchingAnalysis?.archetype || battingAnalysis?.styleTitle || '',
+    styleTags: pitchingAnalysis?.styleTags || battingAnalysis?.styleTags || [],
   };
 
   // 3. 기록 정규화 (시즌별, 일자별, 상대팀별)
@@ -539,6 +576,8 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     seasons,
     gameLogs,
     vsTeams,
+    pitchingAnalysis,
+    battingAnalysis,
   };
 
   playerCache.set(playerId, { timestamp: Date.now(), data: result });

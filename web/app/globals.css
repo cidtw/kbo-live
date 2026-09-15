@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css');
 
 @tailwind base;
@@ -42,57 +43,92 @@ table {
 }
 
 :root {
-  --background: #020617;
+  /* KBO Official Color Scheme Reference (koreabaseball.com) */
+  --kbo-navy: #002063;
+  --kbo-blue: #005bac;
+  --kbo-red: #ed1c24;
+  --kbo-cyan: #00bece;
+  --kbo-gold: #c5a059;
+
+  --background: #051124;
   --foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-soft: rgba(59, 130, 246, 0.15);
+  --primary: #005bac;
+  --primary-hover: #00478a;
+  --primary-soft: rgba(0, 91, 172, 0.18);
   
   --ink-primary: #f8fafc;
-  --ink-secondary: #e2e8f0;
-  --ink-tertiary: #94a3b8;
-  --ink-muted: #64748b;
-  --ink-faint: #475569;
+  --ink-secondary: #cbd5e1;
+  --ink-tertiary: #8fa6bd;
+  --ink-muted: #556e8a;
+  --ink-faint: #3b516b;
   
-  --canvas: #020617;
-  --surface: #0f172a;
-  --surface-hover: #1e293b;
-  --surface-muted: #1e293b;
+  --canvas: #051124;
+  --surface: #0c1d38;
+  --surface-hover: #132b4f;
+  --surface-muted: #102342;
   
-  --border-light: #1e293b;
-  --border-medium: #334155;
+  --border-light: #163156;
+  --border-medium: #254e86;
   
-  --bull-red: #f43f5e;
-  --bull-red-soft: rgba(244, 63, 94, 0.15);
+  --bull-red: #ed1c24;
+  --bull-red-soft: rgba(237, 28, 36, 0.18);
   
-  --bear-blue: #38bdf8;
-  --bear-blue-soft: rgba(56, 189, 248, 0.15);
+  --bear-blue: #00bece;
+  --bear-blue-soft: rgba(0, 190, 206, 0.15);
   
-  --warning-yellow: #f59e0b;
-  --warning-yellow-soft: rgba(245, 158, 11, 0.15);
+  --warning-yellow: #c5a059;
+  --warning-yellow-soft: rgba(197, 160, 89, 0.18);
 }
 
 body {
   background-color: var(--canvas);
   color: var(--ink-secondary);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
 }
 
-/* Toss-style spacious cards adapted to dark baseball stadium theme */
+/* High-tech KBO Stadium Navy Glass Panel */
 .glass-panel {
-  background-color: var(--surface);
-  border: 1px solid var(--border-light);
-  border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, rgba(12, 29, 56, 0.95) 0%, rgba(8, 24, 50, 0.98) 100%);
+  border: 1px solid rgba(22, 49, 86, 0.85);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px -5px rgba(0, 15, 45, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.glass-panel:hover {
+  border-color: rgba(37, 78, 134, 0.9);
+}
+
+/* Third-party high-precision baseball statistics typography */
+.font-stats {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: -0.01em;
+}
+
 .mono-font {
-  font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
+}
+
+/* Third-Party Developer Stamp & Badges */
+.badge-thirdparty {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2.5px 7px;
+  border-radius: 5px;
+  background: rgba(0, 190, 206, 0.12);
+  color: #00bece;
+  border: 1px solid rgba(0, 190, 206, 0.35);
 }
 
 /* Scrollbars */

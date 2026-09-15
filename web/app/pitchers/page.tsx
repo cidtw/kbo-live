@@ -6,8 +6,9 @@ import FilterBar from '@/components/pitchers/FilterBar';
 import OverworkTable from '@/components/pitchers/OverworkTable';
 import PitcherDrawer from '@/components/pitchers/PitcherDrawer';
 import ExportButtons from '@/components/pitchers/ExportButtons';
+import { RawDataDrawer } from '@/components/RawDataDrawer';
 import { OverworkDatasetResponse, PitcherOverworkData } from '@/lib/domain/types';
-import { isMatchingTeam } from '@/lib/roster-fa-service';
+import { isMatchingTeam } from '@/lib/domain/util';
 
 export default function PitcherOverworkPage() {
   const [dataset, setDataset] = useState<OverworkDatasetResponse | null>(null);
@@ -78,31 +79,36 @@ export default function PitcherOverworkPage() {
   }, [dataset, selectedTeam, selectedRole, onlyHighRisk, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+    <div className="min-h-screen bg-[#051124] text-slate-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* 상단 헤더 */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-kbo-borderLight">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-900/60 text-blue-300 border border-blue-700/60">
-                KBO LIVE DATASET
+            <div className="flex items-center gap-2.5">
+              <span className="badge-thirdparty">
+                OVERWORK LAB v1.2
               </span>
-              <span className="text-xs text-slate-400">10개 구단 투수 실시간 등판 분석</span>
+              <span className="text-xs text-kbo-textTertiary">10개 구단 투수 실시간 등판 분석</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mt-1">
               KBO 투수 혹사 지수 (Overwork Index)
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 mt-1">
-              소화 이닝, 투구 수, 2~3연투 기록 및 휴식 결핍 페널티를 종합 분석하여 투수 부하를 수치화한 데이터셋입니다.
+            <p className="text-xs md:text-sm text-kbo-textTertiary mt-1 font-medium flex items-center gap-2">
+              <span>소화 이닝, 투구 수, 2~3연투 기록 및 휴식 결핍 페널티를 종합 분석하여 투수 부하를 수치화한 데이터셋</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-kbo-gold font-mono text-xs">단축키 [2]</span>
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             {dataset && (
-              <ExportButtons
-                pitchers={filteredPitchers}
-                dateRange={dataset.dateRange}
-              />
+              <>
+                <ExportButtons
+                  pitchers={filteredPitchers}
+                  dateRange={dataset.dateRange}
+                />
+                <RawDataDrawer data={filteredPitchers} title="PITCHER_OVERWORK_PAYLOAD" />
+              </>
             )}
           </div>
         </div>

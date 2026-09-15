@@ -4,6 +4,7 @@ import { SectionHeader } from './SectionHeader';
 import { GameGrid } from './GameGrid';
 import { GameCard } from './GameCard';
 import { EmptyState } from './EmptyState';
+import { RawDataDrawer } from './RawDataDrawer';
 import { mapToGameViewModel, GameViewModel } from '../lib/domain/mapper';
 
 interface KboDashboardPageProps {
@@ -54,14 +55,24 @@ export const KboDashboardPage: React.FC<KboDashboardPageProps> = ({
       {/* Page Header and Date Navigation */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-5 border-b border-toss-borderLight pb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-toss-inkPrimary tracking-tight">
-            KBO 리그
-          </h1>
-          <p className="text-xs md:text-sm text-toss-inkMuted mt-1 font-medium">
-            KBO 리그 경기 일정 및 문자중계를 실시간으로 확인하세요.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              KBO 리그 실시간 중계
+            </h1>
+            <span className="badge-thirdparty">RELAY LAB</span>
+          </div>
+          <p className="text-xs md:text-sm text-kbo-textTertiary mt-1 font-medium flex items-center gap-2">
+            <span>실시간 문자중계 파서 & 스코어보드 피드</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-kbo-gold font-mono text-xs">단축키 [1]</span>
           </p>
         </div>
-        <DateNavigator selectedDate={selectedDate} onDateChange={onDateChange} />
+        <div className="flex items-center gap-3">
+          <DateNavigator selectedDate={selectedDate} onDateChange={onDateChange} />
+          {rawGames && rawGames.length > 0 && (
+            <RawDataDrawer data={rawGames} title={`GAMES_${selectedDate}`} />
+          )}
+        </div>
       </div>
 
       {loading ? (

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
+import { GlobalFooter } from "@/components/GlobalFooter";
 
 export const metadata: Metadata = {
-  title: "KBO Live - 실시간 야구 중계 & 통합 분석 플랫폼",
-  description: "KBO 리그의 실시간 문자중계, 투수 혹사 지수, 투수 등판 일지(PTS 3D 궤적), 라인업 및 FA 서비스타임 데이터셋을 한눈에 확인하세요.",
+  title: "KBO Live - 실시간 야구 분석 & 세이버메트릭스 랩 [3rd-Party]",
+  description: "KBO 리그 실시간 문자중계, 투수 혹사 지수, 3D PTS 투구 궤적, 라인업 및 145일 FA 서비스타임 독립 서드파티 분석 대시보드",
 };
 
 export default function RootLayout({
@@ -14,11 +15,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-600 selection:text-white">
+      <body className="bg-[#051124] text-slate-100 min-h-screen antialiased selection:bg-[#005BAC] selection:text-white flex flex-col font-sans">
         {/* 상단 통일된 글로벌 네비게이션 바 */}
         <GlobalNavbar />
 
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+
+        {/* 하단 서드파티 텔레메트리 & 면책조항 푸터 */}
+        <GlobalFooter />
       </body>
     </html>
   );

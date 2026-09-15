@@ -7,6 +7,7 @@ import { FaLeaderboard } from '@/components/roster/FaLeaderboard';
 import { PlayerDetailModal } from '@/components/roster/PlayerDetailModal';
 import { DayRosterResponse, PlayerRosterItem } from '@/types/roster-fa';
 import { isMatchingTeam } from '@/lib/roster-fa-service';
+import { RawDataDrawer } from '@/components/RawDataDrawer';
 import {
   Users,
   LayoutGrid,
@@ -155,8 +156,13 @@ export default function RosterFaPage() {
               title="새로고침"
               className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-blue-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-kbo-cyan' : ''}`} />
             </button>
+
+            {/* Raw JSON API Inspector */}
+            {rosterData && (
+              <RawDataDrawer data={rosterData} title={`ROSTER_FA_${date}`} />
+            )}
           </div>
         </div>
       </div>
@@ -164,28 +170,33 @@ export default function RosterFaPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Page Header & View Switcher */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2 border-b border-kbo-borderLight">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black tracking-tight text-white">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight text-white">
                 {date} KBO 1군 엔트리 & FA 서비스타임 데이터셋
               </h2>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold">
+              <span className="badge-thirdparty text-[10px]">
+                145D FA MATRIX
+              </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-kbo-blue/20 text-kbo-cyan border border-kbo-blue/40 font-semibold">
                 {selectedTeam === 'ALL' ? '전체 10개 구단' : `${selectedTeam} 구단`}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              구단별 선발 라인업(1~9번+선발투수)과 교체/벤치 엔트리를 전수 분석하고, 전일 대비 등록/말소 내역 및 145일 기준 당해 FA 충족 여부를 실시간 산출합니다.
+            <p className="text-xs text-kbo-textTertiary mt-1 font-medium flex items-center gap-2">
+              <span>구단별 선발 라인업(1~9번+선발투수)과 교체/벤치 엔트리 전수 분석 및 전일 대비 등록/말소 내역</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-kbo-gold font-mono text-xs">단축키 [4]</span>
             </p>
           </div>
 
           {/* View Modes */}
-          <div className="flex items-center bg-slate-900 p-1.5 rounded-2xl border border-slate-800 shadow-lg text-xs font-bold">
+          <div className="flex items-center bg-[#051124] p-1.5 rounded-2xl border border-kbo-borderLight shadow-lg text-xs font-bold">
             <button
               onClick={() => setViewMode('TABLE')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
                 viewMode === 'TABLE'
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? 'bg-kbo-blue text-white shadow-md shadow-kbo-blue/30 border border-blue-400/40'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -196,7 +207,7 @@ export default function RosterFaPage() {
               onClick={() => setViewMode('LINEUP')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
                 viewMode === 'LINEUP'
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? 'bg-kbo-blue text-white shadow-md shadow-kbo-blue/30 border border-blue-400/40'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -207,7 +218,7 @@ export default function RosterFaPage() {
               onClick={() => setViewMode('FA_LEADERBOARD')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
                 viewMode === 'FA_LEADERBOARD'
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? 'bg-kbo-blue text-white shadow-md shadow-kbo-blue/30 border border-blue-400/40'
                   : 'text-slate-400 hover:text-white'
               }`}
             >

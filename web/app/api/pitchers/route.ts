@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { crawlPitcherOverworkDataset } from '@/lib/domain/crawler';
-import { kstDateStr, addDays } from '@/lib/domain/util';
-import { isMatchingTeam } from '@/lib/roster-fa-service';
+import { kstDateStr, addDays, isMatchingTeam } from '@/lib/domain/util';
 import { OverworkDatasetResponse } from '@/lib/domain/types';
 
 // 최근 요청 결과 인메모리 캐시 (key: `${from}_${to}`)

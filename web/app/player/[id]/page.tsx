@@ -7,19 +7,20 @@ import PlayerProfileHero from '@/components/player/PlayerProfileHero';
 import SeasonRecordsTable from '@/components/player/SeasonRecordsTable';
 import GameLogsTable from '@/components/player/GameLogsTable';
 import VsTeamRecordsTable from '@/components/player/VsTeamRecordsTable';
+import PitchingStyleAnalysis from '@/components/player/PitchingStyleAnalysis';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-type TabType = 'season' | 'gamelog' | 'vsteam';
+type TabType = 'pitching' | 'season' | 'gamelog' | 'vsteam';
 
 export default function PlayerDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const playerId = resolvedParams.id;
 
   const [data, setData] = useState<FullPlayerRecordData | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('season');
+  const [activeTab, setActiveTab] = useState<TabType>('pitching');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +37,10 @@ export default function PlayerDetailPage({ params }: PageProps) {
         const json: FullPlayerRecordData = await res.json();
         if (active) {
           setData(json);
+          // 분석 데이터가 없으면 시즌 기록 탭을 기본으로
+          if (!json.pitchingAnalysis && !json.battingAnalysis) {
+            setActiveTab('season');
+          }
         }
       } catch (err: any) {
         if (active) {
@@ -101,10 +106,24 @@ export default function PlayerDetailPage({ params }: PageProps) {
             <PlayerProfileHero profile={data.profile} />
 
             {/* 2. 탭 네비게이션 바 */}
-            <div className="border-b border-slate-800 flex items-center gap-2">
+            <div className="border-b border-slate-800 flex items-center gap-2 overflow-x-auto">
+              {(data.pitchingAnalysis || data.battingAnalysis) && (
+                <button
+                  onClick={() => setActiveTab('pitching')}
+                  className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    activeTab === 'pitching'
+                      ? 'border-blue-500 text-blue-400 bg-blue-950/20'
+                      : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  }`}
+                >
+                  <span>🎯</span>
+                  <span>{data.pitchingAnalysis ? '구종 분석 & 피칭 스타일' : '타격 분석 & 타구 성향'}</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setActiveTab('season')}
-                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === 'season'
                     ? 'border-blue-500 text-blue-400 bg-blue-950/20'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -116,7 +135,7 @@ export default function PlayerDetailPage({ params }: PageProps) {
 
               <button
                 onClick={() => setActiveTab('gamelog')}
-                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === 'gamelog'
                     ? 'border-blue-500 text-blue-400 bg-blue-950/20'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -128,7 +147,7 @@ export default function PlayerDetailPage({ params }: PageProps) {
 
               <button
                 onClick={() => setActiveTab('vsteam')}
-                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+                className={`px-4 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === 'vsteam'
                     ? 'border-blue-500 text-blue-400 bg-blue-950/20'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -141,6 +160,13 @@ export default function PlayerDetailPage({ params }: PageProps) {
 
             {/* 3. 탭 컨텐츠 */}
             <div className="pt-2">
+              {activeTab === 'pitching' && (
+                <PitchingStyleAnalysis
+                  pitchingAnalysis={data.pitchingAnalysis}
+                  battingAnalysis={data.battingAnalysis}
+                  playerName={data.profile.name}
+                />
+              )}
               {activeTab === 'season' && <SeasonRecordsTable seasons={data.seasons} />}
               {activeTab === 'gamelog' && <GameLogsTable gameLogs={data.gameLogs} />}
               {activeTab === 'vsteam' && <VsTeamRecordsTable vsTeams={data.vsTeams} />}
