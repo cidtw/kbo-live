@@ -17,9 +17,12 @@ export interface PlayerProfile {
   age: string;               // 예: "22세"
   height: string;            // 예: "187"
   weight: string;            // 예: "87"
-  debutYear: string;         // 프로 입단/데뷔 시기 (예: "2022")
-  debutTeam: string;         // 입단 구단 (예: "KIA 타이거즈")
-  schools: string[];         // 출신 학교 목록 (예: ["충암고등학교"])
+  debutYear: string;         // 프로 입단/데뷔 연도 (예: "2024")
+  debutTeam: string;         // 프로 입단 구단 (예: "LG 트윈스")
+  draftInfo?: string;        // 신인 드래프트 지명 순위 (예: "2021년 LG 2차 4라운드 37순위" 또는 "육성선수")
+  payment?: string;          // 입단 계약금 (예: "7000만원")
+  salary?: string;           // 연봉 (예: "3000만원")
+  schools: string[];         // 출신 학교 목록 (예: ["강릉영동대", "강릉고", "경포중", "노암초"])
   prizes: { year: string; contents: string }[]; // 주요 수상 내역
 }
 
@@ -90,6 +93,42 @@ export interface FullPlayerRecordData {
 const playerCache = new Map<string, { timestamp: number; data: FullPlayerRecordData }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
+const PRO_TEAMS_WHITELIST: Record<string, string> = {
+  LG: 'LG 트윈스',
+  KIA: 'KIA 타이거즈',
+  HT: 'KIA 타이거즈',
+  해태: '해태 타이거즈',
+  삼성: '삼성 라이온즈',
+  SS: '삼성 라이온즈',
+  SL: '삼성 라이온즈',
+  두산: '두산 베어스',
+  OB: 'OB 베어스',
+  DB: '두산 베어스',
+  KT: 'KT 위즈',
+  kt: 'KT 위즈',
+  SSG: 'SSG 랜더스',
+  SK: 'SK 와이번스',
+  롯데: '롯데 자이언츠',
+  LT: '롯데 자이언츠',
+  LOT: '롯데 자이언츠',
+  한화: '한화 이글스',
+  빙그레: '빙그레 이글스',
+  HH: '한화 이글스',
+  HE: '한화 이글스',
+  NC: 'NC 다이노스',
+  NCD: 'NC 다이노스',
+  키움: '키움 히어로즈',
+  넥센: '넥센 히어로즈',
+  우리: '우리 히어로즈',
+  히어로즈: '키움 히어로즈',
+  현대: '현대 유니콘스',
+  쌍방울: '쌍방울 레이더스',
+  태평양: '태평양 돌핀스',
+  청보: '청보 핀토스',
+  삼미: '삼미 슈퍼스타즈',
+  MBC: 'MBC 청룡',
+};
+
 async function getJsonWithRetry(url: string, retries = 2): Promise<any> {
   for (let i = 0; i <= retries; i++) {
     try {
@@ -107,9 +146,111 @@ async function getJsonWithRetry(url: string, retries = 2): Promise<any> {
       return await res.json();
     } catch (e: any) {
       if (i === retries) throw e;
-      await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 500 * (i + 1)));
     }
   }
+}
+
+/**
+ * KBO 공식 사이트(koreabaseball.com)에서 선수의 공식 서류 등록 데이터(경력/출신교, 신인지명순위, 입단년도, 계약금)를 크롤링합니다.
+ */
+export async function fetchKboOfficialProfile(playerId: string): Promise<{
+  careerSchools: string[];
+  draftInfo: string;
+  joinYear: string;
+  joinTeam: string;
+  joinInfoRaw: string;
+  payment: string;
+  salary: string;
+} | null> {
+  const urls = [
+    `https://www.koreabaseball.com/Record/Player/PitcherDetail/Basic.aspx?playerId=${playerId}`,
+    `https://www.koreabaseball.com/Record/Player/HitterDetail/Basic.aspx?playerId=${playerId}`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+        },
+        signal: AbortSignal.timeout(6000),
+        cache: 'no-store',
+      });
+
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (!html.includes('playerProfile_lblName')) continue;
+
+      const getField = (fName: string) => {
+        const regex = new RegExp(`id="[^"]*${fName}">([^<]*)<`);
+        const m = html.match(regex);
+        return m ? m[1].trim() : '';
+      };
+
+      const rawCareer = getField('lblCareer'); // 예: "노암초-경포중-강릉고-강릉영동대" or "...-성균관대-키움-상무"
+      const rawDraft = getField('lblDraft');   // 예: "21 LG 2차 4라운드 37순위" or "22 KT 1차" or "육성선수"
+      const rawJoin = getField('lblJoinInfo');  // 예: "24LG", "22KT", "05삼성"
+      const payment = getField('lblPayment');
+      const salary = getField('lblSalary');
+
+      // 1. 출신 학교 분리 및 정제
+      const careerSchools: string[] = [];
+      if (rawCareer) {
+        const parts = rawCareer.split('-');
+        for (const p of parts) {
+          const trimmed = p.trim();
+          if (!trimmed) continue;
+          // 프로 구단이나 군 구단(상무/경찰)은 학교가 아님
+          const isTeam = Object.keys(PRO_TEAMS_WHITELIST).some(
+            (t) => trimmed.toLowerCase() === t.toLowerCase() || trimmed.includes(PRO_TEAMS_WHITELIST[t])
+          ) || trimmed === '상무' || trimmed === '경찰' || trimmed === '국가대표';
+
+          if (!isTeam) {
+            careerSchools.push(trimmed);
+          }
+        }
+      }
+
+      // 2. 입단년도 및 입단 구단 정규화 (예: "24LG" -> 연도 2024, 구단 LG 트윈스)
+      let joinYear = '';
+      let joinTeam = '';
+      if (rawJoin) {
+        const mYear = rawJoin.match(/^(\d{2})(.*)$/);
+        if (mYear) {
+          const yy = parseInt(mYear[1], 10);
+          joinYear = yy >= 80 ? `19${yy}` : `20${yy < 10 ? '0' + yy : yy}`;
+          const teamAbbr = mYear[2].trim();
+          joinTeam = PRO_TEAMS_WHITELIST[teamAbbr] || teamAbbr;
+        }
+      }
+
+      // 3. 지명 순위 정규화 (예: "21 LG 2차 4라운드 37순위" -> "2021년 LG 2차 4R (37순위)")
+      let draftInfo = rawDraft;
+      if (rawDraft) {
+        const dMatch = rawDraft.match(/^(\d{2})\s*(.*)$/);
+        if (dMatch) {
+          const dYear = parseInt(dMatch[1], 10);
+          const fullYear = dYear >= 80 ? `19${dYear}` : `20${dYear < 10 ? '0' + dYear : dYear}`;
+          draftInfo = `${fullYear}년 ${dMatch[2].trim()}`;
+        }
+      }
+
+      return {
+        careerSchools,
+        draftInfo,
+        joinYear,
+        joinTeam,
+        joinInfoRaw: rawJoin,
+        payment,
+        salary,
+      };
+    } catch (_) {
+      // 다음 URL 시도
+    }
+  }
+  return null;
 }
 
 /**
@@ -124,31 +265,100 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
   const profileUrl = `${GW}/players/kbo/${encodeURIComponent(playerId)}/tores-profile`;
   const recordUrl = `${GW}/players/kbo/${encodeURIComponent(playerId)}/playerend-record`;
 
-  const [profileRes, recordRes] = await Promise.all([
+  // 네이버 포털 API + KBO 공식 등록 정보 병렬 수집
+  const [profileRes, recordRes, kboOfficial] = await Promise.all([
     getJsonWithRetry(profileUrl).catch(() => null),
     getJsonWithRetry(recordUrl).catch(() => null),
+    fetchKboOfficialProfile(playerId).catch(() => null),
   ]);
 
   const pRaw = profileRes?.result?.profile;
   const rRaw = recordRes?.result;
 
-  if (!pRaw && !rRaw) return null;
+  if (!pRaw && !rRaw && !kboOfficial) return null;
 
-  // 1. 프로필 정규화
-  const teamInfo = pRaw?.teamInfo?.[0] || {};
-  const careerInfo = pRaw?.sportsBridgeCareerInfo || [];
-  const debutEntry = careerInfo[careerInfo.length - 1] || careerInfo[0] || {};
+  // 1. 프로 입단 정보 정확도 개선 (아마추어 등판 오인 버그 방지)
+  let debutYear = '';
+  let debutTeam = '';
+  let draftInfo = kboOfficial?.draftInfo || '';
 
-  const schools: string[] = [];
-  if (Array.isArray(pRaw?.mainSchoolList)) {
-    pRaw.mainSchoolList.forEach((s: any) => {
-      if (s.schoolName && !schools.includes(s.schoolName)) schools.push(s.schoolName);
+  // 1순위: KBO 공식 등록 입단 정보
+  if (kboOfficial?.joinYear && kboOfficial?.joinTeam) {
+    debutYear = kboOfficial.joinYear;
+    debutTeam = kboOfficial.joinTeam;
+  }
+
+  // 2순위: 네이버 공식 debutInfo (예: [{"debut_year":"2021","debuts_work":"SK 와이번스 입단"}])
+  if (!debutYear && Array.isArray(pRaw?.debutInfo) && pRaw.debutInfo.length > 0) {
+    const d = pRaw.debutInfo[0];
+    if (d.debut_year) {
+      debutYear = String(d.debut_year);
+      debutTeam = String(d.debuts_work || '').replace(/입단$/, '').trim();
+    }
+  }
+
+  // 3순위: sportsBridgeCareerInfo에서 프로 구단만 화이트리스트 필터링 (아마추어 대회/국가대표/홍보대사 완전 배제)
+  if (!debutYear && Array.isArray(pRaw?.sportsBridgeCareerInfo)) {
+    const validProCareers = pRaw.sportsBridgeCareerInfo
+      .filter((c: any) => {
+        const cnt = String(c.contents || '').trim();
+        // 국가대표, 올스타, 홍보대사, 상무, 경찰 배제
+        if (cnt.includes('대표') || cnt.includes('대사') || cnt.includes('상무') || cnt.includes('경찰')) return false;
+        // KBO 프로 구단 화이트리스트에 부합하는지 확인
+        return Object.values(PRO_TEAMS_WHITELIST).some((team) => cnt.includes(team)) ||
+          Object.keys(PRO_TEAMS_WHITELIST).some((k) => cnt.toLowerCase().includes(k.toLowerCase()));
+      })
+      .sort((a: any, b: any) => {
+        const yearA = parseInt(String(a.startDate || '9999').slice(0, 4), 10) || 9999;
+        const yearB = parseInt(String(b.startDate || '9999').slice(0, 4), 10) || 9999;
+        return yearA - yearB; // 가장 빠른 프로 입단 연도 우선
+      });
+
+    if (validProCareers.length > 0) {
+      const earliest = validProCareers[0];
+      debutYear = String(earliest.startDate || '').slice(0, 4);
+      debutTeam = String(earliest.contents || '').trim();
+    }
+  }
+
+  // 2. 출신 학교 목록 구성 (대졸 4년제/2년제 누락 방지)
+  const rawSchools: string[] = [];
+
+  // 1순위: KBO 공식 기록실 출신교 (노암초, 경포중, 강릉고, 강릉영동대 등 전수 수록)
+  if (kboOfficial?.careerSchools && kboOfficial.careerSchools.length > 0) {
+    kboOfficial.careerSchools.forEach((s) => {
+      if (!rawSchools.includes(s)) rawSchools.push(s);
     });
   }
-  if (schools.length === 0 && Array.isArray(pRaw?.sportsBridgeSchool)) {
-    pRaw.sportsBridgeSchool.forEach((s: any) => {
-      if (s.schoolName && !schools.includes(s.schoolName)) schools.push(s.schoolName);
+
+  // 2순위: 네이버 인물정보 mainSchoolList & sportsBridgeSchool 보강
+  if (Array.isArray(pRaw?.mainSchoolList)) {
+    pRaw.mainSchoolList.forEach((s: any) => {
+      if (s.schoolName && !rawSchools.includes(s.schoolName)) {
+        rawSchools.push(s.schoolName);
+      }
     });
+  }
+  if (Array.isArray(pRaw?.sportsBridgeSchool)) {
+    pRaw.sportsBridgeSchool.forEach((s: any) => {
+      if (s.schoolName && !rawSchools.includes(s.schoolName)) {
+        rawSchools.push(s.schoolName);
+      }
+    });
+  }
+
+  // 중복 및 약칭/정식명칭 통합 (예: '성균관대학교'가 있으면 '성균관대' 생략)
+  const schools: string[] = [];
+  const sortedRaw = [...new Set(rawSchools)].sort((a, b) => b.length - a.length);
+  for (const s of sortedRaw) {
+    const base = s.replace(/(대학교|고등학교|중학교|초등학교|대학|학교|교)$/, '');
+    const already = schools.some((r) => {
+      const rBase = r.replace(/(대학교|고등학교|중학교|초등학교|대학|학교|교)$/, '');
+      return base.length >= 2 && rBase.length >= 2 && (base === rBase || r.includes(base) || base.includes(rBase));
+    });
+    if (!already) {
+      schools.push(s);
+    }
   }
 
   const prizes: { year: string; contents: string }[] = [];
@@ -158,14 +368,15 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     });
   }
 
+  const teamInfo = pRaw?.teamInfo?.[0] || {};
   const profile: PlayerProfile = {
     playerId,
-    name: pRaw?.name || 'KBO 선수',
+    name: pRaw?.name || kboOfficial?.joinTeam || 'KBO 선수',
     imageUrl:
       pRaw?.profileImage ||
       'https://ssl.pstatic.net/static.sports/resources/sports-web/player-end/static/media/default_player.svg',
     teamCode: teamInfo.teamCode || rRaw?.teamCode || '',
-    teamName: teamInfo.teamOriginalName || teamInfo.teamName || 'KBO',
+    teamName: teamInfo.teamOriginalName || teamInfo.teamName || debutTeam || 'KBO',
     backNumber: teamInfo.teamPlayerNumber || '',
     position: teamInfo.teamPosition || (rRaw?.playerType === 'pitcher' ? '투수' : '타자'),
     playerDescription: rRaw?.playerDescription || (rRaw?.playerType === 'pitcher' ? '투수' : '타자'),
@@ -174,13 +385,16 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     age: pRaw?.age || '',
     height: pRaw?.bodyHeight ? `${pRaw.bodyHeight}cm` : '',
     weight: pRaw?.bodyWeight ? `${pRaw.bodyWeight}kg` : '',
-    debutYear: debutEntry.startDate || '',
-    debutTeam: debutEntry.contents || '',
+    debutYear: debutYear || '',
+    debutTeam: debutTeam || '',
+    draftInfo: draftInfo || '',
+    payment: kboOfficial?.payment || '',
+    salary: kboOfficial?.salary || '',
     schools,
     prizes,
   };
 
-  // 2. 기록 정규화 (시즌별, 일자별, 상대팀별)
+  // 3. 기록 정규화 (시즌별, 일자별, 상대팀별)
   let parsedRecord: any = {};
   try {
     if (rRaw?.record) parsedRecord = JSON.parse(rRaw.record);
@@ -191,7 +405,7 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     if (rRaw?.vsTeam) parsedVsTeam = JSON.parse(rRaw.vsTeam);
   } catch (_) {}
 
-  // 2-1. 시즌별 기록
+  // 3-1. 시즌별 기록
   const seasons: SeasonRecord[] = [];
   const rawSeasons = parsedRecord?.season || [];
   for (const s of rawSeasons) {
@@ -217,7 +431,7 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     });
   }
 
-  // 2-2. 일자별 최근 기록
+  // 3-2. 일자별 최근 기록
   const gameLogs: GameLogRecord[] = [];
   const rawGames = parsedRecord?.game || [];
   for (const g of rawGames) {
@@ -237,7 +451,7 @@ export async function fetchFullPlayerData(playerId: string): Promise<FullPlayerR
     });
   }
 
-  // 2-3. 상대 구단별 전적
+  // 3-3. 상대 구단별 전적
   const vsTeams: VsTeamRecord[] = [];
   const rawVs = parsedVsTeam?.vsteam || [];
   for (const v of rawVs) {
