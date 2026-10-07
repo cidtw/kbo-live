@@ -1,6 +1,10 @@
 {
   "name": "web",
   "version": "0.1.0",
+  "engines": {
+    "npm": ">=11"
+  },
+  "packageManager": "npm@11.21.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",

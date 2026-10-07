@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
+      - run: npm install -g npm@11
       - run: npm test
       - run: npm run check
 
@@ -31,6 +33,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
+      - run: npm install -g npm@11
       - run: npm ci
       - run: npm test
       # eslint는 기존 파일에 오류 10건(react-hooks 규칙)이 있어 우선 제외
