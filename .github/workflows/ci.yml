@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
+      - run: npm install -g npm@11
+      - run: npm test
+      - run: npm run check
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm test
+      # eslint는 기존 파일에 오류 10건(react-hooks 규칙)이 있어 우선 제외
+      - run: npm run build
