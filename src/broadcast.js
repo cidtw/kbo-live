@@ -32,6 +32,7 @@ class Broadcast {
     this.batterNow = null;      // 최근 타자 등장 이벤트의 batterRecord
     this.status = i18n.t.connecting;
     this.ended = false;
+    this.replay = !!config.replay;
     this.follow = true;         // true=최신 하단 추적, false=스크롤로 과거 보는 중
     this.viewBottom = 0;        // follow=false 일 때 화면에 보일 마지막 로그 인덱스
     this.viewN = 10;            // 현재 중계창 표시 줄 수(render 가 갱신)
@@ -58,7 +59,7 @@ class Broadcast {
   // 리플레이에선 relay.inningScore 가 "최종" 스코어라 스포일러 → 이벤트에서 재구성한다.
   absorbMeta(relay) {
     if (!relay) return;
-    if (relay.inningScore && !config.replay) this.inningScore = relay.inningScore;
+    if (relay.inningScore && !(this.replay || config.replay)) this.inningScore = relay.inningScore;
     for (const [side, key] of [['home', 'homeLineup'], ['away', 'awayLineup']]) {
       const lu = relay[key];
       if (!lu) continue;
@@ -123,7 +124,7 @@ class Broadcast {
     const prevGs = this.gs;
     if (ev.gs) this.gs = ev.gs;
     if (ev.batterRecord) this.batterNow = ev.batterRecord;
-    if (config.replay) this._rebuildInningScore(ev);
+    if (this.replay || config.replay) this._rebuildInningScore(ev);
 
     // 투구 데이터 통계 수집
     if (ev.type === 1) {
@@ -164,7 +165,7 @@ class Broadcast {
     }
 
 
-    const text = ev.text.trim();
+    const text = String(ev.text || '').replace(/[\x00-\x1f\x7f]+/g, ' ').trim();
     if (!text) return;
     if (/경기\s*종료|^승리투수/.test(text)) this.ended = true;
     if (silent) return;
@@ -239,7 +240,7 @@ class Broadcast {
   // 현재 투수/타자 표시용 (render 소비)
   currentPitcher() {
     // 리플레이는 라인업의 "마지막 투수"가 최종 마무리라 스포일러 → 이벤트의 pcode 로 해석
-    if (!config.replay) {
+    if (!(this.replay || config.replay)) {
       const side = this.half === 'T' ? 'home' : 'away'; // 수비팀 투수
       const ps = this.lineups[side]?.pitcher || [];
       if (ps.length) return ps[ps.length - 1];

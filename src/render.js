@@ -56,8 +56,9 @@ function weatherText(bc) {
 
 function headerBar(bc) {
   const ended = bc.ended;
-  const mode = ended ? `${ic('live')} END` : config.replay ? `${ic('live')} REPLAY` : `${ic('live')} LIVE`;
-  const modeC = ended ? 244 : config.replay ? 141 : 160;
+  const isReplay = bc.replay || config.replay;
+  const mode = ended ? `${ic('live')} END` : isReplay ? `${ic('live')} REPLAY` : `${ic('live')} LIVE`;
+  const modeC = ended ? 244 : isReplay ? 141 : 160;
   const matchup = `${bc.meta.away?.name || '?'} ${i18n.t.vs} ${bc.meta.home?.name || '?'}`;
   const stadiumWeather = `${bc.meta.stadium || ''}${weatherText(bc)}`;
   if (config.theme === 'nerd' && useColor) {
@@ -712,7 +713,8 @@ function buildFrame(bc, { columns, rows } = {}) {
   if (bc.recordMode) {
     if (showBoard) {
       if (roomy) out.push('');
-      out.push(...recordBlock(bc, W));
+      const maxPanel = Math.max(3, R - out.length - 6 - (roomy ? 1 : 0));
+      out.push(...recordBlock(bc, W).slice(0, maxPanel));
       if (roomy) out.push('');
     } else {
       out.push(center(`${C.dim}Record (Low height screen)${C.reset}`, W));
@@ -720,7 +722,8 @@ function buildFrame(bc, { columns, rows } = {}) {
   } else if (bc.showPreview) {
     if (showBoard) {
       if (roomy) out.push('');
-      out.push(...previewBlock(bc, W));
+      const maxPanel = Math.max(3, R - out.length - 6 - (roomy ? 1 : 0));
+      out.push(...previewBlock(bc, W).slice(0, maxPanel));
       if (roomy) out.push('');
     } else {
       out.push(center(`${C.dim}Preview (Low height screen)${C.reset}`, W));

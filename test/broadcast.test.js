@@ -167,3 +167,17 @@ test('투구 데이터(구속, 구종) 통계 축적 검증', () => {
   assert.ok(Object.values(speeds)[0].total >= 1);
 });
 
+test('ingestRelay: 제어문자(개행/탭/ESC)가 중계 라인을 깨뜨리지 않도록 공백 치환', () => {
+  const bc = fresh();
+  bc.ingestRelay({
+    textRelays: [{
+      inn: 1,
+      homeOrAway: '0',
+      textOptions: [{ seqno: 1, type: 13, text: '안타\r\n2루까지\x1b[31m진루\t성공' }],
+    }],
+  });
+  assert.strictEqual(bc.log.length, 1);
+  assert.ok(!/[\r\n\t]/.test(bc.log[0].text));
+});
+
+

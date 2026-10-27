@@ -164,7 +164,8 @@ function generateReport(bc) {
 
 function exportReport(bc) {
   const reportContent = generateReport(bc);
-  const gameId = bc.meta?.gameId || 'game';
+  const rawId = bc.meta?.gameId || 'game';
+  const gameId = String(rawId).replace(/[^A-Za-z0-9_-]/g, '_');
   const filename = `report_${gameId}.md`;
   const filepath = path.join(process.cwd(), filename);
   fs.writeFileSync(filepath, reportContent, 'utf8');

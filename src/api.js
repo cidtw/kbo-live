@@ -9,6 +9,7 @@ const { debug, warn } = require('./log');
 // 네이버 스포츠 내부 API 게이트웨이 (비공개·비문서화 — 브라우저 문자중계 페이지가 쓰는 것과 동일)
 const GW = 'https://api-gw.sports.naver.com';
 const MAX_BODY_BYTES = 5 * 1024 * 1024; // 5MB
+const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
 
 function packageVersion() {
   try {
@@ -32,9 +33,11 @@ class ApiError extends Error {
   }
 }
 
-function defaultGet(url, { timeoutMs = 15000, maxBodyBytes = MAX_BODY_BYTES, userAgent = defaultUserAgent() } = {}) {
+function defaultGet(url, { timeoutMs = 15000, maxBodyBytes = MAX_BODY_BYTES, userAgent = defaultUserAgent(), signal } = {}) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
+      agent: keepAliveAgent,
+      signal,
       headers: {
         'User-Agent': userAgent,
         Accept: 'application/json',

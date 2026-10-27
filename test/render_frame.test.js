@@ -62,3 +62,19 @@ test('headerBar: includes league label', () => {
   const h = headerBar(sampleBc());
   assert.ok(typeof h === 'string' && h.length > 0);
 });
+
+test('buildFrame: recordMode panel clamps to terminal rows without vertical overflow', () => {
+  resetConfig({ gui: true, theme: 'ascii', replay: false });
+  const bc = sampleBc();
+  bc.recordMode = 'batters';
+  bc.record = {
+    battersBoxscore: {
+      away: Array.from({ length: 18 }, (_, i) => ({ name: `원정${i}`, pos: '좌', ab: 4, hit: 1 })),
+      home: Array.from({ length: 18 }, (_, i) => ({ name: `홈팀${i}`, pos: '우', ab: 4, hit: 2 })),
+    },
+  };
+  const rows = 24;
+  const lines = renderToString(bc, { columns: 96, rows }).split('\n');
+  assert.ok(lines.length <= rows);
+});
+
