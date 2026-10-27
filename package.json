@@ -9,7 +9,7 @@
   "type": "commonjs",
   "engines": {
     "npm": ">=11",
-    "node": ">=18"
+    "node": ">=20.17"
   },
   "files": [
     "bin",
