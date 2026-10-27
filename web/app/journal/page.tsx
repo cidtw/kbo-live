@@ -22,9 +22,29 @@ export default function JournalPage() {
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const fetchGames = async (targetDate: string) => {
+  // date / selectedGameId 변경 시 로딩 상태 초기화 (렌더 중 이전 값 비교 패턴)
+  const [prevDate, setPrevDate] = useState(date);
+  if (prevDate !== date) {
+    setPrevDate(date);
     setIsLoadingGames(true);
     setErrorMessage('');
+  }
+  const [prevGameId, setPrevGameId] = useState(selectedGameId);
+  if (prevGameId !== selectedGameId) {
+    setPrevGameId(selectedGameId);
+    if (selectedGameId) {
+      setIsLoadingDetail(true);
+      setErrorMessage('');
+    }
+  }
+
+  const fetchGames = (targetDate: string) => {
+    setIsLoadingGames(true);
+    setErrorMessage('');
+    return loadGames(targetDate);
+  };
+
+  const loadGames = async (targetDate: string) => {
     try {
       const res = await fetch(`/api/games?date=${targetDate}`);
       const json = await res.json();
@@ -49,13 +69,17 @@ export default function JournalPage() {
   };
 
   useEffect(() => {
-    fetchGames(date);
+    loadGames(date);
   }, [date]);
 
-  const fetchGameDetail = async (gameId: string) => {
+  const fetchGameDetail = (gameId: string) => {
     if (!gameId) return;
     setIsLoadingDetail(true);
     setErrorMessage('');
+    return loadGameDetail(gameId);
+  };
+
+  const loadGameDetail = async (gameId: string) => {
     try {
       const res = await fetch(`/api/journal/${gameId}`);
       const json = await res.json();
@@ -82,7 +106,7 @@ export default function JournalPage() {
 
   useEffect(() => {
     if (selectedGameId) {
-      fetchGameDetail(selectedGameId);
+      loadGameDetail(selectedGameId);
     }
   }, [selectedGameId]);
 
@@ -261,7 +285,7 @@ export default function JournalPage() {
           KBO PTS Tracker & Outing Journal • Data Source: Naver Sports Baseball Live Text Relay & PTS
         </p>
         <p className="text-[11px] text-slate-600 mt-1">
-          Coordinate System: Home plate width 17", PTS 9-Parameter Kinematic Flight Model
+          Coordinate System: Home plate width 17&quot;, PTS 9-Parameter Kinematic Flight Model
         </p>
       </footer>
     </div>

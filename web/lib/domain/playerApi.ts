@@ -157,6 +157,60 @@ const PRO_TEAMS_WHITELIST: Record<string, string> = {
   MBC: 'MBC 청룡',
 };
 
+/** 출신 학교 분리 및 정제 (예: "...-성균관대-키움-상무" → 학교만). 프로/군 구단은 학교가 아님. */
+export function parseCareerSchools(rawCareer: string): string[] {
+  const careerSchools: string[] = [];
+  if (rawCareer) {
+    const parts = rawCareer.split('-');
+    for (const p of parts) {
+      const trimmed = p.trim();
+      if (!trimmed) continue;
+      // 프로 구단이나 군 구단(상무/경찰)은 학교가 아님
+      const isTeam = Object.keys(PRO_TEAMS_WHITELIST).some(
+        (t) => trimmed.toLowerCase() === t.toLowerCase() || trimmed.includes(PRO_TEAMS_WHITELIST[t])
+      ) || trimmed === '상무' || trimmed === '경찰' || trimmed === '국가대표';
+
+      if (!isTeam) {
+        careerSchools.push(trimmed);
+      }
+    }
+  }
+  return careerSchools;
+}
+
+/**
+ * 입단년도·입단 구단 정규화 (예: "24LG" → 2024, LG 트윈스)와
+ * 지명 순위 정규화 (예: "21 LG 2차 4라운드 37순위" → "2021년 LG 2차 4라운드 37순위").
+ */
+export function parseJoinAndDraft(
+  rawJoin: string,
+  rawDraft: string,
+): { joinYear: string; joinTeam: string; draftInfo: string } {
+  let joinYear = '';
+  let joinTeam = '';
+  if (rawJoin) {
+    const mYear = rawJoin.match(/^(\d{2})(.*)$/);
+    if (mYear) {
+      const yy = parseInt(mYear[1], 10);
+      joinYear = yy >= 80 ? `19${yy}` : `20${yy < 10 ? '0' + yy : yy}`;
+      const teamAbbr = mYear[2].trim();
+      joinTeam = PRO_TEAMS_WHITELIST[teamAbbr] || teamAbbr;
+    }
+  }
+
+  let draftInfo = rawDraft;
+  if (rawDraft) {
+    const dMatch = rawDraft.match(/^(\d{2})\s*(.*)$/);
+    if (dMatch) {
+      const dYear = parseInt(dMatch[1], 10);
+      const fullYear = dYear >= 80 ? `19${dYear}` : `20${dYear < 10 ? '0' + dYear : dYear}`;
+      draftInfo = `${fullYear}년 ${dMatch[2].trim()}`;
+    }
+  }
+
+  return { joinYear, joinTeam, draftInfo };
+}
+
 async function getJsonWithRetry(url: string, retries = 2): Promise<any> {
   for (let i = 0; i <= retries; i++) {
     try {
@@ -224,47 +278,8 @@ export async function fetchKboOfficialProfile(playerId: string): Promise<{
       const payment = getField('lblPayment');
       const salary = getField('lblSalary');
 
-      // 1. 출신 학교 분리 및 정제
-      const careerSchools: string[] = [];
-      if (rawCareer) {
-        const parts = rawCareer.split('-');
-        for (const p of parts) {
-          const trimmed = p.trim();
-          if (!trimmed) continue;
-          // 프로 구단이나 군 구단(상무/경찰)은 학교가 아님
-          const isTeam = Object.keys(PRO_TEAMS_WHITELIST).some(
-            (t) => trimmed.toLowerCase() === t.toLowerCase() || trimmed.includes(PRO_TEAMS_WHITELIST[t])
-          ) || trimmed === '상무' || trimmed === '경찰' || trimmed === '국가대표';
-
-          if (!isTeam) {
-            careerSchools.push(trimmed);
-          }
-        }
-      }
-
-      // 2. 입단년도 및 입단 구단 정규화 (예: "24LG" -> 연도 2024, 구단 LG 트윈스)
-      let joinYear = '';
-      let joinTeam = '';
-      if (rawJoin) {
-        const mYear = rawJoin.match(/^(\d{2})(.*)$/);
-        if (mYear) {
-          const yy = parseInt(mYear[1], 10);
-          joinYear = yy >= 80 ? `19${yy}` : `20${yy < 10 ? '0' + yy : yy}`;
-          const teamAbbr = mYear[2].trim();
-          joinTeam = PRO_TEAMS_WHITELIST[teamAbbr] || teamAbbr;
-        }
-      }
-
-      // 3. 지명 순위 정규화 (예: "21 LG 2차 4라운드 37순위" -> "2021년 LG 2차 4R (37순위)")
-      let draftInfo = rawDraft;
-      if (rawDraft) {
-        const dMatch = rawDraft.match(/^(\d{2})\s*(.*)$/);
-        if (dMatch) {
-          const dYear = parseInt(dMatch[1], 10);
-          const fullYear = dYear >= 80 ? `19${dYear}` : `20${dYear < 10 ? '0' + dYear : dYear}`;
-          draftInfo = `${fullYear}년 ${dMatch[2].trim()}`;
-        }
-      }
+      const careerSchools = parseCareerSchools(rawCareer);
+      const { joinYear, joinTeam, draftInfo } = parseJoinAndDraft(rawJoin, rawDraft);
 
       return {
         careerSchools,

@@ -10,6 +10,17 @@ import { RawDataDrawer } from '@/components/RawDataDrawer';
 import { OverworkDatasetResponse, PitcherOverworkData } from '@/lib/domain/types';
 import { isMatchingTeam } from '@/lib/domain/util';
 
+async function requestDataset(range: string): Promise<OverworkDatasetResponse> {
+  const params = new URLSearchParams();
+  if (range) params.set('range', range);
+
+  const res = await fetch(`/api/pitchers?${params.toString()}`);
+  if (!res.ok) {
+    throw new Error(`API 요청 실패 (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
 export default function PitcherOverworkPage() {
   const [dataset, setDataset] = useState<OverworkDatasetResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -25,30 +36,34 @@ export default function PitcherOverworkPage() {
   // 모달/드로어 상태
   const [selectedPitcher, setSelectedPitcher] = useState<PitcherOverworkData | null>(null);
 
-  const fetchDataset = useCallback(async () => {
+  // selectedRange 변경 시 로딩 상태 초기화 (렌더 중 이전 값 비교 패턴)
+  const [prevRange, setPrevRange] = useState(selectedRange);
+  if (prevRange !== selectedRange) {
+    setPrevRange(selectedRange);
     setIsLoading(true);
     setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (selectedRange) params.set('range', selectedRange);
+  }
 
-      const res = await fetch(`/api/pitchers?${params.toString()}`);
-      if (!res.ok) {
-        throw new Error(`API 요청 실패 (HTTP ${res.status})`);
-      }
-      const data: OverworkDatasetResponse = await res.json();
-      setDataset(data);
-    } catch (err: any) {
-      console.error('Failed to fetch dataset:', err);
-      setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedRange]);
+  const loadDataset = useCallback(
+    () =>
+      requestDataset(selectedRange)
+        .then(setDataset, (err: any) => {
+          console.error('Failed to fetch dataset:', err);
+          setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+        })
+        .finally(() => setIsLoading(false)),
+    [selectedRange]
+  );
+
+  const fetchDataset = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+    return loadDataset();
+  }, [loadDataset]);
 
   useEffect(() => {
-    fetchDataset();
-  }, [fetchDataset]);
+    loadDataset();
+  }, [loadDataset]);
 
   // 클라이언트 사이드 실시간 필터링
   const filteredPitchers = useMemo(() => {

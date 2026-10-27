@@ -12,15 +12,29 @@ interface Trajectory3DProps {
   showAllTrajectories?: boolean;
 }
 
+const EMPTY_PITCHES: PitchEvent[] = [];
+
 export const Trajectory3D: React.FC<Trajectory3DProps> = ({
   pitch,
-  allPitches = [],
+  allPitches = EMPTY_PITCHES,
   showAllTrajectories = false,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [cameraView, setCameraView] = useState<'catcher' | 'pitcher' | 'side' | 'top'>('catcher');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [animProgress, setAnimProgress] = useState<number>(1);
+  // 마운트 직후 effect가 0으로 리셋하던 동작과 동일하게 0에서 시작
+  const [animProgress, setAnimProgress] = useState<number>(0);
+
+  // pitch / 표시 옵션이 바뀌면 애니메이션 진행도 리셋 (렌더 중 이전 값 비교 패턴)
+  const [prevDeps, setPrevDeps] = useState({ pitch, showAllTrajectories, allPitches });
+  if (
+    prevDeps.pitch !== pitch ||
+    prevDeps.showAllTrajectories !== showAllTrajectories ||
+    prevDeps.allPitches !== allPitches
+  ) {
+    setPrevDeps({ pitch, showAllTrajectories, allPitches });
+    setAnimProgress(0);
+  }
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -261,8 +275,6 @@ export const Trajectory3D: React.FC<Trajectory3DProps> = ({
         }
       });
     }
-
-    setAnimProgress(0);
   }, [pitch, showAllTrajectories, allPitches]);
 
   useEffect(() => {

@@ -23,12 +23,33 @@ export function isMuted(): boolean {
   return stored === 'true';
 }
 
+const muteListeners = new Set<() => void>();
+
+/** useSyncExternalStore용 구독: toggleMute 및 다른 탭의 storage 변경을 알림 */
+export function subscribeMuted(listener: () => void): () => void {
+  muteListeners.add(listener);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === 'kbo_audio_muted') listener();
+  };
+  if (typeof window !== 'undefined') window.addEventListener('storage', onStorage);
+  return () => {
+    muteListeners.delete(listener);
+    if (typeof window !== 'undefined') window.removeEventListener('storage', onStorage);
+  };
+}
+
+/** SSR/하이드레이션 시점 스냅샷: 기존 useState(false) 초기값과 동일 */
+export function getServerMutedSnapshot(): boolean {
+  return false;
+}
+
 export function toggleMute(): boolean {
   if (typeof window === 'undefined') return true;
   const current = isMuted();
   const next = !current;
   localStorage.setItem('kbo_audio_muted', String(next));
   isAudioMuted = next;
+  muteListeners.forEach((l) => l());
   return next;
 }
 

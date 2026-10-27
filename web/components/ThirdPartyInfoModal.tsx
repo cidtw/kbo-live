@@ -14,7 +14,8 @@ import {
   Activity,
   ExternalLink,
 } from 'lucide-react';
-import { toggleMute, isMuted, playChime } from '@/lib/utils/audioChimes';
+import { toggleMute, playChime } from '@/lib/utils/audioChimes';
+import { useMuted } from '@/lib/hooks/useMuted';
 
 interface ThirdPartyInfoModalProps {
   isOpen: boolean;
@@ -28,10 +29,9 @@ export const ThirdPartyInfoModal: React.FC<ThirdPartyInfoModalProps> = ({
   const [activeTab, setActiveTab] = useState<'DISCLOSURE' | 'SHORTCUTS' | 'DIAGNOSTICS'>('DISCLOSURE');
   const [sessionSec, setSessionSec] = useState<number>(0);
   const [latency, setLatency] = useState<number>(28);
-  const [muted, setMuted] = useState<boolean>(false);
+  const muted = useMuted();
 
   useEffect(() => {
-    setMuted(isMuted());
     const interval = setInterval(() => {
       setSessionSec((s) => s + 1);
     }, 1000);
@@ -56,7 +56,6 @@ export const ThirdPartyInfoModal: React.FC<ThirdPartyInfoModalProps> = ({
 
   const handleToggleSound = () => {
     const next = toggleMute();
-    setMuted(next);
     if (!next) playChime('event');
   };
 

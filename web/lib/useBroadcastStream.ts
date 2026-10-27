@@ -36,6 +36,7 @@ export function useBroadcastStream(gameId: string): UseBroadcastStreamResult {
   const [rawEvents, setRawEvents] = useState<any[]>([]);
 
   const broadcastRef = useRef<Broadcast | null>(null);
+  const [broadcastInstance, setBroadcastInstance] = useState<Broadcast | null>(null);
   const rawEventsRef = useRef<any[]>([]);
 
   const syncStateFromBc = useCallback((bc: Broadcast) => {
@@ -126,6 +127,7 @@ export function useBroadcastStream(gameId: string): UseBroadcastStreamResult {
 
           const bc = new Broadcast(meta);
           broadcastRef.current = bc;
+          setBroadcastInstance(bc);
 
           if (relay) {
             bc._absorbMeta(relay);
@@ -259,6 +261,6 @@ export function useBroadcastStream(gameId: string): UseBroadcastStreamResult {
     pitchStats,
     loading,
     rawEvents,
-    broadcastInstance: broadcastRef.current,
+    broadcastInstance,
   };
 }
