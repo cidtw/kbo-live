@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { ThirdPartyInfoModal } from './ThirdPartyInfoModal';
 import { useThirdPartyShortcuts } from '@/lib/hooks/useThirdPartyShortcuts';
-import { toggleMute, isMuted, playChime } from '@/lib/utils/audioChimes';
+import { toggleMute, playChime } from '@/lib/utils/audioChimes';
+import { useMuted } from '@/lib/hooks/useMuted';
 
 const NAV_ITEMS = [
   {
@@ -46,14 +47,12 @@ export const GlobalNavbar: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [latency, setLatency] = useState<number>(31);
-  const [soundMuted, setSoundMuted] = useState<boolean>(false);
+  const soundMuted = useMuted();
 
   // 키보드 단축키 등록 및 Toast 알림 훅
   const { toast } = useThirdPartyShortcuts(() => setIsModalOpen(true));
 
   useEffect(() => {
-    setSoundMuted(isMuted());
-
     // 실시간 KST 시계 갱신 (초 단위)
     const updateTime = () => {
       const now = new Date();
@@ -79,7 +78,6 @@ export const GlobalNavbar: React.FC = () => {
 
   const handleToggleSound = () => {
     const next = toggleMute();
-    setSoundMuted(next);
     if (!next) playChime('event');
   };
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { playChime, toggleMute, isMuted } from '@/lib/utils/audioChimes';
+import { playChime, toggleMute } from '@/lib/utils/audioChimes';
+import { useMuted } from '@/lib/hooks/useMuted';
 
 export interface ShortcutToast {
   id: number;
@@ -13,11 +14,7 @@ export interface ShortcutToast {
 export function useThirdPartyShortcuts(onOpenInfoModal?: () => void) {
   const router = useRouter();
   const [toast, setToast] = useState<ShortcutToast | null>(null);
-  const [muted, setMuted] = useState<boolean>(false);
-
-  useEffect(() => {
-    setMuted(isMuted());
-  }, []);
+  const muted = useMuted();
 
   const showToast = useCallback((message: string, icon: string = '⚡') => {
     const id = Date.now();
@@ -67,7 +64,6 @@ export function useThirdPartyShortcuts(onOpenInfoModal?: () => void) {
       } else if (key === 'm' || key === 'M') {
         e.preventDefault();
         const nextMuted = toggleMute();
-        setMuted(nextMuted);
         if (!nextMuted) playChime('event');
         showToast(`단축키 [M]: 효과음 ${nextMuted ? '음소거' : '활성화'}`, nextMuted ? '🔇' : '🔊');
       } else if (key === '?' || (e.shiftKey && key === '/')) {
@@ -84,5 +80,5 @@ export function useThirdPartyShortcuts(onOpenInfoModal?: () => void) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [router, onOpenInfoModal, showToast]);
 
-  return { toast, muted, setMuted, showToast };
+  return { toast, muted, showToast };
 }
