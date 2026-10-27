@@ -156,8 +156,10 @@ async function main() {
     }
   });
 
+  let isPrompting = false;
   if (term.enableRaw()) {
     process.stdin.on('keypress', (s, key) => {
+      if (isPrompting) return;
       if (activeMode === 'menu') {
         const action = handleMenuKey(s, key, { games, selectedIdx });
         applyMenuAction(action);
@@ -179,10 +181,12 @@ async function main() {
         if (menuResolver) menuResolver({ type: 'CHANGE_DATE', date: addDays(date, action.days) });
         break;
       case 'MENU_DATE_PROMPT': {
+        isPrompting = true;
         term.restore();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         rl.question('\nEnter Date (YYYY-MM-DD or MMDD): ', (answer) => {
           rl.close();
+          isPrompting = false;
           if (term.rawOn) {
             process.stdout.write(term.ENTER);
             process.stdin.setRawMode(true);

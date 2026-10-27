@@ -61,7 +61,7 @@ function writeInning(gameId, inning, data, finished) {
     const dir = gameDir(gameId);
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${key}.json`);
-    const tmp = `${file}.tmp`;
+    const tmp = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(data)); // tmp에 먼저 쓰고 원자적 rename
     fs.renameSync(tmp, file);
   } catch (_) {} // 쓰기 실패는 무시
@@ -76,7 +76,7 @@ function touchGame(gameId) {
     const dir = gameDir(gameId);
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, 'meta.json');
-    const tmp = `${file}.tmp`;
+    const tmp = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify({ lastAccess: Date.now() }));
     fs.renameSync(tmp, file);
   } catch (_) {}

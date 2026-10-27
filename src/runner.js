@@ -149,9 +149,10 @@ function finish(bc, kind) {
 }
 
 function attachSidePanels(bc, game, api) {
+  const isActive = () => !bc.switchRequested && !bc.menuRequested;
   if (game.stadium) {
     api.fetchWeather(game.stadium).then((w) => {
-      if (w) {
+      if (w && isActive()) {
         bc.weather = w;
         render(bc);
       }
@@ -159,13 +160,13 @@ function attachSidePanels(bc, game, api) {
   }
   if (game.gameId) {
     api.fetchPreview(game.gameId).then((p) => {
-      if (p) {
+      if (p && isActive()) {
         bc.preview = p;
         render(bc);
       }
     }).catch((e) => debug('preview failed', e.message));
     api.fetchRecord(game.gameId).then((r) => {
-      if (r) {
+      if (r && isActive()) {
         bc.record = r;
         render(bc);
       }
@@ -251,7 +252,11 @@ async function runLive(bc, game, opts, deps = {}) {
       try {
         const date = opts.date || kstDateStr();
         bc.games = await api.fetchGamesByDate(date);
-        render(bc);
+        if (bc.recordMode && game.gameId) {
+          const r = await api.fetchRecord(game.gameId);
+          if (r) bc.record = r;
+        }
+        if (!bc.switchRequested && !bc.menuRequested) render(bc);
       } catch (e) {
         debug('games refresh failed', e.message);
       }
