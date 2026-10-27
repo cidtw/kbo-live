@@ -14,10 +14,11 @@ test/           lib/domain 단위 테스트 (vitest)
 ## 명령
 
 ```bash
-npm install
-npm run dev      # http://localhost:3000
-npm test         # vitest run (lib/domain 직접 import)
-npm run lint
+# 저장소 루트에서
+npm ci
+npm run web:dev          # http://localhost:3000
+npm test -w web          # vitest run (lib/domain 직접 import)
+npm run lint -w web
 npm run build
 ```
 

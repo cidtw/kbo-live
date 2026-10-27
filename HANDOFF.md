@@ -2,6 +2,18 @@
 
 최신 항목이 위. 새 항목은 `handoff` 스킬 형식으로 맨 위에 추가.
 
+## 2026-10-27 — npm workspaces 모노레포 전환
+
+**한 일**
+- CLI → `apps/cli/`, web → `apps/web/` (git mv). 루트는 private 워크스페이스, lock은 루트 하나
+- `vercel.json` 삭제 (미배포. 배포 시 Vercel Root Directory = `apps/web`)
+
+**남은 일**
+- [ ] 로컬: 루트에서 `npm ci`, 전역 링크는 `cd apps/cli && npm link`로 재연결
+- [ ] 3단계: `packages/core`로 CLI·web 공통 도메인 로직 추출
+
+> 아래 기록의 `web/`, `src/` 경로는 각각 `apps/web/`, `apps/cli/src/`로 이동됨.
+
 ## 2026-10-10 — 워크스페이스 이동·원격 동기화
 
 **한 일**
@@ -10,7 +22,7 @@
 - 검증: `npm test` 72 pass, `npm run check`, `npm run build` 성공
 
 **남은 일**
-- [ ] `web/package-lock.json` 재생성 (`npm ci` 실패 — three, @types/three, lucide-react, @dimforge/rapier3d-compat 누락)
+- [x] `web/package-lock.json` 재생성 (PR #1에서 해결, 이후 루트 lock으로 통합) (`npm ci` 실패 — three, @types/three, lucide-react, @dimforge/rapier3d-compat 누락)
 - [ ] snapshot 브랜치에서 살릴 내용이 있는지 확인 (없으면 삭제)
 
 
