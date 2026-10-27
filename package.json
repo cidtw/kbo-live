@@ -1,50 +1,26 @@
 {
-  "name": "kbo-live",
-  "version": "0.1.1",
+  "name": "kbo-live-monorepo",
+  "private": true,
   "packageManager": "npm@11.21.0",
-  "description": "KBO 리그 실시간 문자중계 CLI — 터미널 HUD로 투구·안타·득점을 실시간 중계 (비공식 네이버 스포츠 데이터)",
-  "bin": {
-    "kbo-live": "bin/kbo-live.js"
-  },
-  "type": "commonjs",
   "engines": {
     "npm": ">=11",
     "node": ">=20.17"
   },
-  "files": [
-    "bin",
-    "src",
-    "locales",
-    "README.md",
-    "CHANGELOG.md"
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "start": "node bin/kbo-live.js",
-    "build": "npm run build --prefix web",
-    "web:dev": "npm run dev --prefix web",
-    "web:build": "npm run build --prefix web",
-    "web:start": "npm run start --prefix web",
-    "test": "node --test test/*.test.js",
-    "test:web": "npm test --prefix web",
-    "check": "node scripts/check-syntax.js",
-    "prepublishOnly": "npm test && npm run check"
-  },
-  "keywords": [
-    "kbo",
-    "baseball",
-    "야구",
-    "문자중계",
-    "live",
-    "cli",
-    "tui",
-    "scoreboard"
-  ],
-  "author": "lucas <lucas@withvus.ai>",
-  "license": "MIT",
-  "preferGlobal": true,
-  "os": [
-    "darwin",
-    "linux",
-    "win32"
-  ]
+    "start": "npm start -w kbo-live",
+    "test": "npm test --workspaces --if-present",
+    "test:cli": "npm test -w kbo-live",
+    "test:web": "npm test -w web",
+    "check": "npm run check --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "web:dev": "npm run dev -w web",
+    "web:build": "npm run build -w web",
+    "web:start": "npm run start -w web"
+  }
 }

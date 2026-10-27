@@ -16,26 +16,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
       # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
       - run: npm install -g npm@11
-      - run: npm test
-      - run: npm run check
+      - run: npm ci
+      - run: npm test -w kbo-live
+      - run: npm run check -w kbo-live
+      - run: npm pack --dry-run -w kbo-live
 
   web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: web/package-lock.json
-      # packageManager(npm@11) 표준화 — 러너 기본 npm(10) 대신 npm 11 사용
+          cache-dependency-path: package-lock.json
       - run: npm install -g npm@11
       - run: npm ci
-      - run: npm test
-      - run: npm run lint
-      - run: npm run build
+      - run: npm run typecheck -w web
+      - run: npm test -w web
+      - run: npm run lint -w web
+      - run: npm run build -w web

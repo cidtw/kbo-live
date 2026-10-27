@@ -3,10 +3,10 @@ node_modules/
 .DS_Store
 report_*.md
 graphify-out/
-web/node_modules/
-web/.next/
+apps/*/node_modules/
+apps/web/.next/
 .cache/
-web/.cache/
+apps/*/.cache/
 .env
 .env.*
 !.env.example

@@ -1,0 +1,44 @@
+{
+  "name": "kbo-live",
+  "version": "0.1.1",
+  "description": "KBO 리그 실시간 문자중계 CLI — 터미널 HUD로 투구·안타·득점을 실시간 중계 (비공식 네이버 스포츠 데이터)",
+  "bin": {
+    "kbo-live": "bin/kbo-live.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "npm": ">=11",
+    "node": ">=20.17"
+  },
+  "files": [
+    "bin",
+    "src",
+    "locales",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "node bin/kbo-live.js",
+    "test": "node --test test/*.test.js",
+    "check": "node scripts/check-syntax.js",
+    "prepublishOnly": "npm test && npm run check"
+  },
+  "keywords": [
+    "kbo",
+    "baseball",
+    "야구",
+    "문자중계",
+    "live",
+    "cli",
+    "tui",
+    "scoreboard"
+  ],
+  "author": "lucas <lucas@withvus.ai>",
+  "license": "MIT",
+  "preferGlobal": true,
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
+}
